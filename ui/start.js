@@ -348,7 +348,7 @@ export function renderStartStage() {
       h('p', { class: 'muted' }, '상품 페이지가 아니에요. 보고 있는 상품이 있으면 그 페이지로 가 주세요. 아니면 아래에 상품 이름이나 주제를 적어도 돼요.'),
       manualForm({ withPrice: false, titleLabel: '상품 이름 또는 주제', titleHint: '예: 에어랩 캐러셀, 요즘 뜨는 핸디 청소기' }),
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-read-page', onclick: async () => { await loadProduct({ refresh: true }); fn.renderStrip(); fn.renderStage(); if (!S.rec?.product) toast('이 탭은 쿠팡 상품 페이지가 아니에요.', { kind: 'warn' }); } }, '지금 보는 탭에서 상품 읽기'),
-      S.cp?.hasKeys ? searchPanel() : h('p', { class: 'muted small', id: 'no-partners-note' }, '쿠팡 파트너스 키가 없으면 검색은 쓸 수 없어요. 상품 이름을 적고 사진을 올리면 돼요. 키는 설정에서 넣을 수 있어요(선택).')),
+      S.cp?.hasKeys ? searchPanel() : null),
     makeButton('이 내용으로 만들기'));
     kids.push(h('details', { class: 'card', id: 'shorts-start' }, h('summary', null, '쇼츠 대본으로 시작하기'),
       shortsStartForm()));

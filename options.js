@@ -3,8 +3,7 @@ import { request } from './lib/bus.js';
 import { IS_WEB } from './lib/platform.js';
 import { WHERE } from './lib/common.js';
 import * as store from './lib/store.js';
-import { DISCLOSURE_VARIANTS } from './lib/coupang.js';
-import { h, setChildren, pickImageFile, fmtDate } from './ui/dom.js';
+import { h, setChildren, fmtDate } from './ui/dom.js';
 import { errorBox, normalizeError } from './ui/errors.js';
 
 let settings = null;
@@ -139,40 +138,6 @@ function renderGemini() {
     result);
 }
 
-// ───────────────────────── 쿠팡 파트너스 ─────────────────────────
-
-function renderCoupang() {
-  const host = $id('coupang-section');
-  if (IS_WEB) {
-    setChildren(host, h('h2', { id: 'coupang-h' }, '쿠팡 파트너스'), h('p', { id: 'coupang-web-note' }, '웹 버전에서는 쓰이지 않아요(링크는 파트너스에서 만들어 붙여넣기).'));
-    return;
-  }
-  const access = h('input', { class: 'input', id: 'cp-access', type: 'password', autocomplete: 'off', spellcheck: 'false', placeholder: settings.has.coupangAccessKey ? '바꾸려면 새 Access Key 붙여넣기' : 'Access Key', 'aria-label': 'Access Key' });
-  const secret = h('input', { class: 'input', id: 'cp-secret', type: 'password', autocomplete: 'off', spellcheck: 'false', placeholder: settings.has.coupangSecretKey ? '바꾸려면 새 Secret Key 붙여넣기' : 'Secret Key', 'aria-label': 'Secret Key' });
-  const subId = h('input', { class: 'input', id: 'cp-subid', value: settings.subId || '', placeholder: '예: baekcoach (영문·숫자)', 'aria-label': 'subId' });
-  const result = h('div', { id: 'coupang-result', 'aria-live': 'polite' });
-  const saveBtn = h('button', { type: 'button', class: 'btn btn-primary', id: 'btn-save-coupang' }, '저장');
-  saveBtn.addEventListener('click', async () => {
-    try {
-      const patch = { subId: subId.value.trim() };
-      if (access.value.trim()) patch.coupangAccessKey = access.value.trim();
-      if (secret.value.trim()) patch.coupangSecretKey = secret.value.trim();
-      await save(patch);
-      renderCoupang();
-      statusLine($id('coupang-result'), '저장했어요.');
-    } catch (e) { setChildren(result, errorBox(normalizeError(e, WHERE.PANEL))); }
-  });
-  const delBtn = (settings.has.coupangAccessKey || settings.has.coupangSecretKey) ? h('button', { type: 'button', class: 'btn', id: 'btn-del-coupang' }, '저장된 파트너스 키 지우기') : null;
-  delBtn?.addEventListener('click', async () => { await save({ coupangAccessKey: null, coupangSecretKey: null }); renderCoupang(); statusLine($id('coupang-result'), '파트너스 키를 지웠어요.'); });
-  setChildren(host,
-    h('div', { class: 'field-head' }, h('h2', { id: 'coupang-h' }, '쿠팡 파트너스 (선택)'), h('span', null, badge(settings.has.coupangAccessKey && settings.has.coupangSecretKey))),
-    h('p', null, 'API 승인을 받은 분만 넣으면 돼요. 넣으면 "링크 만들기"와 "쿠팡에서 검색"을 쓸 수 있고, 안 넣어도 모든 기능이 되며 링크만 직접 붙여넣으면 돼요.'),
-    h('label', { class: 'label', for: 'cp-access' }, 'Access Key'), access,
-    h('label', { class: 'label', for: 'cp-secret' }, 'Secret Key'), secret,
-    h('label', { class: 'label', for: 'cp-subid' }, 'subId (선택)'), subId,
-    h('div', { class: 'btn-row' }, saveBtn, delBtn), result);
-}
-
 // ───────────────────────── 계정·말투·로고·고정 태그 ─────────────────────────
 
 async function renderAccount() {
@@ -185,44 +150,13 @@ async function renderAccount() {
   const toneCustom = h('input', { class: 'input', id: 'tone-custom', value: isPreset ? '' : settings.tone, placeholder: '예: 40대 엄마가 친구에게 말하듯', 'aria-label': '말투 직접 쓰기' });
   const syncTone = () => { toneCustom.hidden = toneSel.value !== CUSTOM; };
   toneSel.addEventListener('change', syncTone); syncTone();
-  const tags = h('textarea', { class: 'input', id: 'fixed-tags', rows: 2, placeholder: '#백코치 #공구 (띄어쓰기로 구분)', 'aria-label': '고정 해시태그' });
-  tags.value = (settings.fixedTags || []).join(' ');
 
-  // 로고
-  const logoBox = h('div', { class: 'logo-preview', id: 'logo-preview' }, h('span', { class: 'muted small' }, '로고 없음'));
-  if (settings.logoImageId) {
-    const u = await store.getImageObjectUrl(settings.logoImageId);
-    if (u) logoBox.replaceChildren(h('img', { src: u, alt: '내 로고' }));
-  }
   const result = h('div', { id: 'account-result' });
-  const logoUp = h('button', { type: 'button', class: 'btn', id: 'btn-logo-upload' }, settings.logoImageId ? '로고 바꾸기' : '로고 올리기');
-  logoUp.addEventListener('click', async () => {
-    const f = await pickImageFile();
-    if (!f) return;
-    try {
-      if (f.size > 5 * 1024 * 1024) throw new Error('로고는 5MB 이하만 올릴 수 있어요.');
-      const old = settings.logoImageId;
-      const id = await store.putImage(f, { kind: 'logo' });
-      await save({ logoImageId: id });
-      if (old) store.deleteImage(old).catch(() => {});
-      await renderAccount();
-      statusLine($id('account-result'), '로고를 저장했어요. 새로 만드는 캐러셀부터 오른쪽 아래에 들어가요.');
-    } catch (e) { setChildren(result, errorBox(normalizeError(e, WHERE.PANEL))); }
-  });
-  const logoDel = settings.logoImageId ? h('button', { type: 'button', class: 'btn', id: 'btn-logo-delete' }, '로고 지우기') : null;
-  logoDel?.addEventListener('click', async () => {
-    const old = settings.logoImageId;
-    await save({ logoImageId: null });
-    if (old) store.deleteImage(old).catch(() => {});
-    await renderAccount();
-    statusLine($id('account-result'), '로고를 지웠어요.');
-  });
 
   const saveBtn = h('button', { type: 'button', class: 'btn btn-primary', id: 'btn-save-account' }, '저장');
   saveBtn.addEventListener('click', async () => {
     try {
-      await save({ accountName: name.value.trim().replace(/^@/, ''), tone: toneSel.value === CUSTOM ? toneCustom.value.trim() : toneSel.value, fixedTags: tags.value });
-      tags.value = (settings.fixedTags || []).join(' ');
+      await save({ accountName: name.value.trim().replace(/^@/, ''), tone: toneSel.value === CUSTOM ? toneCustom.value.trim() : toneSel.value });
       statusLine(result, '저장했어요.');
     } catch (e) { setChildren(result, errorBox(normalizeError(e, WHERE.PANEL))); }
   });
@@ -231,52 +165,6 @@ async function renderAccount() {
     h('h2', { id: 'account-h' }, '내 계정'),
     h('label', { class: 'label', for: 'account-name' }, '인스타 계정명'), name,
     h('label', { class: 'label', for: 'tone-select' }, '말투'), toneSel, toneCustom,
-    h('label', { class: 'label', for: 'fixed-tags' }, '고정 해시태그 (매번 자동으로 합쳐져요)'), tags,
-    h('p', { class: 'muted small' }, '해시태그는 모두 합쳐서 30개까지만 쓸 수 있어요.'),
-    h('div', { class: 'label' }, '로고 (카드 오른쪽 아래에 작게 들어가요)'),
-    h('div', { class: 'btn-row' }, logoBox, logoUp, logoDel),
-    h('div', { class: 'btn-row' }, saveBtn), result);
-}
-
-// ───────────────────────── 고지 문구 ─────────────────────────
-
-function renderDisclosure() {
-  const host = $id('disclosure-section');
-  const cur = Number(settings.disclosureVariant) || 0;
-  const result = h('div', { id: 'disclosure-result' });
-  const radios = DISCLOSURE_VARIANTS.map((text, i) => {
-    const r = h('input', { type: 'radio', name: 'disclosure', id: `disc-${i}`, value: String(i), checked: i === cur });
-    r.addEventListener('change', async () => { await save({ disclosureVariant: i }); statusLine(result, '고지 문구를 바꿨어요.'); });
-    return h('label', { class: 'check-row', for: `disc-${i}` }, r, h('span', null, text));
-  });
-  setChildren(host,
-    h('h2', { id: 'disclosure-h' }, '캡션 첫 줄 고지 문구'),
-    h('p', null, '쿠팡 파트너스 게시물에는 고지 문구가 꼭 있어야 해서, 캡션 맨 윗줄에 자동으로 들어가요. 문구 모양만 고를 수 있고 끌 수는 없어요.'),
-    h('div', { class: 'radio-list', role: 'radiogroup', 'aria-label': '고지 문구' }, ...radios), result);
-}
-
-// ───────────────────────── 만들기 설정 ─────────────────────────
-
-function renderMake() {
-  const host = $id('make-section');
-  const result = h('div', { id: 'make-result' });
-  const seg = h('div', { class: 'seg', role: 'radiogroup', 'aria-label': '동시에 만들 카드 수' }, ...[3, 4, 5, 6, 7].map((n) => {
-    const r = h('input', { type: 'radio', name: 'parallel', id: `par-${n}`, value: String(n), checked: n === settings.parallel });
-    r.addEventListener('change', async () => { await save({ parallel: n }); statusLine(result, `동시에 ${n}장씩 만들어요.`); });
-    return h('label', { for: `par-${n}` }, r, h('span', null, String(n)));
-  }));
-  const imgText = h('input', { class: 'input', id: 'image-disclosure', value: settings.imageDisclosureText || '연출 이미지', 'aria-label': '연출 이미지 표시 문구' });
-  const saveBtn = h('button', { type: 'button', class: 'btn btn-primary', id: 'btn-save-make' }, '저장');
-  saveBtn.addEventListener('click', async () => {
-    try { await save({ imageDisclosureText: imgText.value.trim() || '연출 이미지' }); imgText.value = settings.imageDisclosureText; statusLine(result, '저장했어요.'); }
-    catch (e) { setChildren(result, errorBox(normalizeError(e, WHERE.PANEL))); }
-  });
-  setChildren(host,
-    h('h2', { id: 'make-h' }, '만들기 설정'),
-    h('div', { class: 'label' }, '동시에 만들 카드 수 (3~7)'), seg,
-    h('p', { class: 'muted small' }, '많을수록 빨라요. 무료 키에서 "요청이 너무 많아요" 오류가 자주 나면 숫자를 줄여 보세요. 막히면 알아서 하나씩 만들기로 바꿔요.'),
-    h('label', { class: 'label', for: 'image-disclosure' }, '"연출 이미지" 표시 문구'), imgText,
-    h('p', { class: 'muted small' }, 'AI가 만든 사진을 카드에 쓰면 왼쪽 아래에 이 문구가 작게 들어가요.'),
     h('div', { class: 'btn-row' }, saveBtn), result);
 }
 
@@ -318,6 +206,19 @@ function renderBackup() {
     h('div', { class: 'btn-row' }, exp, imp, file), result);
 }
 
+/** 설정 화면에서 없앤 항목(2026-10-26 사용자 요청): 쿠팡 파트너스 키·subId, 고정 해시태그, 로고, 고지 문구 변형, 만들기 설정.
+ *  칸이 없으면 예전에 저장한 값을 볼 수도 지울 수도 없으므로 한 번 비운다. 고지 문구는 기본 문구로 계속 들어간다(해제 불가). */
+async function clearRemovedSettings() {
+  const stale = settings.has?.coupangAccessKey || settings.has?.coupangSecretKey || settings.subId || (settings.fixedTags || []).length
+    || settings.logoImageId || (settings.disclosureVariant ?? 0) !== 0 || (settings.imageDisclosureText && settings.imageDisclosureText !== '연출 이미지');
+  if (!stale) return;
+  const oldLogo = settings.logoImageId;
+  try {
+    await save({ coupangAccessKey: null, coupangSecretKey: null, subId: '', fixedTags: '', logoImageId: null, disclosureVariant: 0, imageDisclosureText: '연출 이미지' });
+    if (oldLogo) store.deleteImage(oldLogo).catch(() => {});
+  } catch { /* 비우기 실패는 화면 표시에 영향 없음 */ }
+}
+
 async function boot() {
   if (IS_WEB) {
     document.documentElement.classList.add('web');
@@ -328,12 +229,10 @@ async function boot() {
     setChildren($id('alerts'), errorBox(normalizeError(e), { title: '설정을 불러오지 못했어요' }));
     settings = { has: {}, fixedTags: [], parallel: 5, disclosureVariant: 0 };
   }
+  await clearRemovedSettings();
   await renderNotice();
   renderGemini();
-  renderCoupang();
   await renderAccount();
-  renderDisclosure();
-  renderMake();
   renderBackup();
   document.documentElement.dataset.ready = '1';
 }

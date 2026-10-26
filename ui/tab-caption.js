@@ -84,7 +84,7 @@ export function renderCaption() {
       h('div', { class: 'label-row' }, h('h3', null, '해시태그'), h('span', { class: 'count', id: 'tag-count' })),
       tagBox,
       h('p', { class: 'warn-line', id: 'tag-warning' }),
-      h('p', { class: 'muted small' }, S.settings?.fixedTags?.length ? `내 고정 태그 ${S.settings.fixedTags.length}개는 자동으로 합쳐져요.` : '설정에서 고정 해시태그를 넣어 두면 매번 자동으로 합쳐져요.'));
+      null);
 
   const linkSection =
     h('section', { class: 'group', id: 'link-group' },
@@ -93,11 +93,7 @@ export function renderCaption() {
         ? h('div', null,
           h('button', { type: 'button', class: 'btn btn-block', id: 'btn-deeplink', disabled: ui.linkBusy || !deepOk, onclick: makeDeeplink }, ui.linkBusy ? '링크 만드는 중…' : '링크 만들기'),
           h('p', { class: 'muted small' }, deepOk ? '내 파트너스 키로 이 상품의 링크를 만들어요. 캐러셀 하나에 한 번만 만들고, 이후에는 저장된 링크를 써요.' : '이 작업은 상품 주소를 몰라서 링크를 만들 수 없어요. 아래에 붙여넣어 주세요.'))
-        : IS_WEB
-          ? h('div', null, h('p', { class: 'muted', id: 'web-link-guide' }, 'partners.coupang.com 에 로그인해서 이 상품의 링크를 만든 뒤, 그 링크를 아래 칸에 붙여넣으세요.'))
-          : h('div', null,
-            h('p', { class: 'muted' }, '쿠팡 파트너스에서 만든 링크를 아래 칸에 붙여넣으세요. 파트너스 키를 설정에 넣으면(선택) 자동으로 만들 수도 있어요.'),
-            h('button', { type: 'button', class: 'btn', id: 'btn-open-options-partners', onclick: () => fn.openOptions() }, '파트너스 키 넣기 (선택)')),
+        : h('div', null, h('p', { class: 'muted', id: 'web-link-guide' }, 'partners.coupang.com 에 로그인해서 이 상품의 링크를 만든 뒤, 그 링크를 아래 칸에 붙여넣으세요.')),
       h('label', { class: 'label', for: 'link-input' }, '붙여넣은 링크'), linkInput,
       h('div', { class: 'btn-row' },
         h('button', { type: 'button', class: 'btn btn-primary', id: 'btn-link-apply', onclick: () => setLink(linkInput.value) }, '링크 넣기'),
