@@ -4,7 +4,8 @@ import { WHERE } from '../lib/common.js';
 import * as store from '../lib/store.js';
 import { TEMPLATES, LAYOUTS, renderCoverVariants, extractColorsFromImageId } from '../lib/render.js';
 import { h, setChildren, debounce, pickImageFile, toast } from './dom.js';
-import { S, fn, cards, mainImageId, refreshCard, refreshAll, scheduleReview, scheduleSave, cardMeta, imageUrl } from './app.js';
+import { renderPhotoEdit, resetPhotoCardState, startRewrite as startPhotoRewrite } from './tab-edit-photo.js';
+import { S, fn, cards, mainImageId, isPhoto, refreshCard, refreshAll, scheduleReview, scheduleSave, cardMeta, imageUrl } from './app.js';
 import { showError } from './errors.js';
 import { LAYOUT_LABELS, LAYOUT_SLOT, TEMPLATE_LABELS, HOOK_LABELS, STYLE_HELP, IMAGE_CHIPS } from './labels.js';
 
@@ -21,6 +22,7 @@ export function renderEdit() {
   const i = S.cardIndex;
   const card = cur();
   if (!p || !card) { setChildren(host, h('p', { class: 'muted' }, '카드가 아직 없어요.')); return; }
+  if (isPhoto(p)) { renderPhotoEdit(host); return; }
   const n = cards().length;
 
   const head = h('textarea', { id: 'edit-headline', class: 'input', rows: 2, 'aria-label': '헤드라인' });
@@ -284,10 +286,11 @@ function covers_revoke() { (ui.covers || []).forEach((c) => URL.revokeObjectURL(
 
 /** 카드가 바뀌면 카드별 임시 상태를 지운다 */
 export function onCardIndexChanged() {
+  resetPhotoCardState();
   covers_revoke();
   resetPerCard();
   if (S.tab === 'edit' && S.phase === 'ready') renderEdit();
 }
 
 /** 다른 곳(점수 '고치기')에서 현재 카드의 다시 쓰기 3안을 바로 띄운다 */
-export function startRewrite() { return rewrite(); }
+export function startRewrite() { return isPhoto() ? startPhotoRewrite() : rewrite(); }

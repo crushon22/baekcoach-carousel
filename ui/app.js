@@ -20,6 +20,10 @@ export const S = {
   sel: null,               // 검색 결과로 고른 상품 {kind:'search', item, imageId}
   manual: { title: '', price: '', imageId: null, imageIds: [], desc: '' },
   topicImageIds: [], webKind: 'manual',
+  mode: 'cardnews',        // 'cardnews' | 'photo' (시작 화면에서 고른 버전. 마지막 선택을 기억)
+  photos: [],              // 사진 캐러셀: 올린 사진 imageId (순서 = 카드 순서)
+  photoStyle: 'outline',   // 사진 캐러셀 글씨 스타일
+  adLabel: true,           // 사진 왼쪽 위 [광고] 표시
   link: '',                // 만들기 전에 알고 있는 링크(검색 결과의 수수료 링크)
   searchResults: null,
   project: null,
@@ -56,6 +60,7 @@ export function forgetImageUrl(imageId) {
 
 // ───────────────────────── 프로젝트 도우미 ─────────────────────────
 
+export const isPhoto = (p = S.project) => p?.carousel?.mode === 'photo';
 export const cards = () => S.project?.carousel?.cards || [];
 export const factIssues = () => (S.project?.issues || []).filter((i) => i.level === 'fact' && !i.resolved);
 export const formatIssues = () => (S.project?.issues || []).filter((i) => i.level === 'format');

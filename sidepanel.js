@@ -3,12 +3,13 @@ import { request } from './lib/bus.js';
 import * as store from './lib/store.js';
 import { IS_WEB } from './lib/platform.js';
 import { h, setChildren, toast, $ } from './ui/dom.js';
-import { S, fn, el, composed, saveNow, updateStatus, unmountPf } from './ui/app.js';
+import { S, fn, el, composed, saveNow, updateStatus, unmountPf, isPhoto, refreshAll, scheduleSave, scheduleReview } from './ui/app.js';
 import { showError, clearErrors } from './ui/errors.js';
 import { TYPE_LABELS } from './ui/labels.js';
 import { PURPOSES } from './lib/ai-util.js';
 import { COUNT_OPTIONS } from './ui/labels.js';
 import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey } from './ui/start.js';
+import { STYLES, STYLE_LABEL, loadModePrefs, MIN_PHOTOS } from './ui/photo.js';
 import { startGenerate, regenerate, cancelStream } from './ui/stream.js';
 import { renderEdit, renderEditMeta, onCardIndexChanged, startRewrite } from './ui/tab-edit.js';
 import { renderReview, gotoCard } from './ui/tab-review.js';
@@ -48,6 +49,7 @@ function renderDecision() {
   if (!p?.plan || S.phase === 'start') { el.decision.hidden = true; el.decision.replaceChildren(); return; }
   el.decision.hidden = false;
   const locked = !!S.stream || S.phase !== 'ready';
+  if (isPhoto(p)) { renderDecisionPhoto(p, locked); return; }
   const chip = (k, label, value) => h('button', { type: 'button', class: 'decide-chip', 'data-kind': k, 'aria-expanded': String(S.picker === k), disabled: locked, onclick: () => { S.picker = S.picker === k ? null : k; renderDecision(); } },
     h('span', { class: 'chip-k' }, label), h('span', { class: 'chip-v' }, value));
   const kids = [h('div', { class: 'decide-row', role: 'group', 'aria-label': '자동으로 정한 것 (누르면 바꿀 수 있어요)' },
@@ -63,6 +65,37 @@ function renderDecision() {
       h('p', { class: 'muted small' }, '바꾸면 근거 자료는 그대로 두고 카드를 새로 써요. 직접 고친 글은 사라지고, 사진은 같은 자리면 유지돼요. 유지하지 못한 사진은 위 안내에 한 줄 남아요.')));
   }
   setChildren(el.decision, ...kids);
+}
+
+/** 사진 캐러셀: [사진 캐러셀 · N장 · 스타일]. 스타일은 AI 없이 바로 다시 그린다. */
+function renderDecisionPhoto(p, locked) {
+  const n = p.carousel.cards.length;
+  const style = p.carousel.overlayStyle || 'outline';
+  const kids = [h('div', { class: 'decide-row', role: 'group', 'aria-label': '사진 캐러셀 설정' },
+    h('div', { class: 'decide-chip static', 'data-kind': 'mode' }, h('span', { class: 'chip-k' }, '버전'), h('span', { class: 'chip-v' }, '사진 캐러셀')),
+    h('div', { class: 'decide-chip static', 'data-kind': 'count' }, h('span', { class: 'chip-k' }, '장수'), h('span', { class: 'chip-v' }, `${n}장`)),
+    h('button', { type: 'button', class: 'decide-chip', 'data-kind': 'style', 'aria-expanded': String(S.picker === 'style'), disabled: locked, onclick: () => { S.picker = S.picker === 'style' ? null : 'style'; renderDecision(); } },
+      h('span', { class: 'chip-k' }, '스타일'), h('span', { class: 'chip-v' }, STYLE_LABEL[style] || style)))];
+  if (S.picker === 'style' && !locked) {
+    kids.push(h('div', { class: 'picker', id: 'decide-picker' },
+      h('div', { class: 'chips' }, ...STYLES.map((st) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(st.key === style), 'data-value': st.key, onclick: () => setPhotoStyle(st.key) }, st.label))),
+      h('p', { class: 'muted small' }, '스타일은 바로 다시 그려요. 글은 그대로예요. 그라데이션은 줄 수·글자 수 기준이 달라 ⚠️가 바뀔 수 있어요.')));
+  }
+  setChildren(el.decision, ...kids);
+}
+
+/** 글씨 스타일 바꾸기(AI 호출 없음) */
+function setPhotoStyle(key) {
+  const p = S.project;
+  S.picker = null;
+  if (!p || p.carousel.overlayStyle === key) { renderDecision(); return; }
+  p.carousel.overlayStyle = key;
+  p.options = { ...(p.options || {}), overlayStyle: key };
+  S.photoStyle = key;
+  refreshAll();
+  scheduleSave(); scheduleReview();
+  renderDecision();
+  if (S.tab === 'edit') renderTab();
 }
 
 function pick(kind, value, same) {
@@ -120,6 +153,8 @@ function render() {
   el.sheet.hidden = !ready;
   el.sheet.classList.toggle('busy', !!S.stream);
   showDock(ready);
+  const ci = document.getElementById('chat-input');
+  if (ci) ci.placeholder = isPhoto(S.project) ? '말로 고쳐요. 예: 3번 글 위로, 글씨 더 크게, 그라데이션으로' : '말로 고쳐요. 예: 3번 짧게, 베이지로';
   if (ready) renderTab();
   updateStatus();
 }
@@ -130,6 +165,12 @@ async function onMake(kind) {
   if (S.phase === 'generating') return;
   if (IS_WEB) S.webKind = kind === 'topic' ? 'topic' : 'manual';
   if (!hasKey()) { renderStage(); document.getElementById('nokey')?.scrollIntoView({ block: 'center' }); return; }
+  if (S.mode === 'photo') {
+    if (S.photos.length < MIN_PHOTOS) { toast(`사진을 ${MIN_PHOTOS}장 이상 올려 주세요.`, { kind: 'warn' }); return; }
+    const pp = buildProduct();
+    await startGenerate(pp, { link: S.link || '', options: { mode: 'photo', overlayStyle: S.photoStyle, adLabel: S.adLabel } });
+    return;
+  }
   const product = buildProduct(IS_WEB ? S.webKind : undefined);
   if (!product) { toast(IS_WEB && S.webKind === 'topic' ? '주제를 먼저 적어 주세요.' : '상품 이름이나 주제를 먼저 적어 주세요.', { kind: 'warn' }); document.getElementById(IS_WEB && S.webKind === 'topic' ? 'topic-text' : 'manual-title')?.focus(); return; }
   await startGenerate(product, { link: S.link || '' });
@@ -151,7 +192,7 @@ async function startNew({ keepNothing = false } = {}) {
   S.project = null; S.phase = 'start'; S.progress = null; S.chat = [];
   S.newProductBanner = null; S.picker = null; S.sel = null; S.link = ''; S.searchResults = null;
   S.manual = { title: '', price: '', imageId: null, imageIds: [], desc: '' };
-  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual';
+  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = [];
   unmountPf();
   closeOverlay();
   clearErrors();
@@ -167,7 +208,7 @@ function onCardIndex() { onCardIndexChanged(); if (S.tab === 'review' && S.phase
 
 Object.assign(fn, {
   render, renderStrip, renderStage, renderProgress, renderDecision, renderNotices, renderTab, openTab, onMake, makeFromShorts, startNew, openOptions,
-  regenerate, startGenerate, openExport, gotoCard, openProject, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
+  regenerate, startGenerate, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
 });
 
 // ───────────────────────── 시작 ─────────────────────────
@@ -217,6 +258,7 @@ async function boot() {
   if (!IS_WEB) chrome.runtime.onMessage.addListener((msg) => { if (msg?.type === 'coupang.productUpdated') onProductUpdated(msg); });
   if (IS_WEB) document.documentElement.classList.add('web');
   chrome.storage.onChanged.addListener((changes, area) => { if (area === 'local' && changes.settings) onSettingsChanged(); });
+  await loadModePrefs();
   render();
   try { S.settings = await request('core.getSettings'); } catch (e) { showError(e); S.settings = { has: {}, fixedTags: [] }; }
   await loadStatus();

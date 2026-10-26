@@ -39,6 +39,7 @@ async function send() {
       const colors = id ? await extractColorsFromImageId(id) : [];
       if (colors.length) { S.project.carousel.accentColor = colors[0]; refreshAll(); scheduleSave(); } else toast('상품 사진에서 색을 뽑지 못했어요.', { kind: 'warn' });
     }
+    fn.renderDecision?.();
     fn.renderTab?.();
     if (r.regenerate) await fn.regenerate(r.regenerate.part, { options: r.regenerate.options, hookIndex: r.regenerate.hookIndex, label: '말씀하신 대로 다시 만드는 중' });
     else if (r.patch?.cards || r.patch?.caption !== undefined) runReview();

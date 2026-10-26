@@ -6,12 +6,14 @@ import { showError, clearErrors } from './errors.js';
 
 const now = () => performance.now();
 
-function skeletonProject(product, { link }) {
+function skeletonProject(product, { link, options = {} }) {
+  const photo = options.mode === 'photo';
   return {
     title: '', input: product, options: {}, plan: null, link: link || '',
     carousel: {
       type: '', template: 'basic', brandColor: BRAND, accountName: S.settings?.accountName || '', ...(S.settings?.logoImageId ? { logoImageId: S.settings.logoImageId } : {}),
       peek: false, panorama: false, hasPartnersLink: !!link, cards: [],
+      ...(photo ? { mode: 'photo', overlayStyle: options.overlayStyle || 'outline', adLabel: options.adLabel !== false } : {}),
     },
     facts: [], factsInfo: null, caption: '', hashtags: [], issues: [], score: null, shorts: null, notices: [],
   };
@@ -33,7 +35,7 @@ function makeHandler(mode, t0, part) {
       if (event === 'plan') {
         p.plan = data;
         p.carousel.type = data.type;
-        p.carousel.template = data.template;
+        if (p.carousel.mode !== 'photo') p.carousel.template = data.template;
         p.carousel.cards = Array.from({ length: data.count }, () => null);
         p.options = { ...(p.options || {}) };
         p.notices = data.notices || [];
@@ -92,13 +94,13 @@ function finishWith(done, prev, { fresh = false } = {}) {
 export async function startGenerate(product, { options = {}, link = '' } = {}) {
   if (S.phase === 'generating') return;
   clearErrors();
-  S.project = skeletonProject(product, { link });
+  S.project = skeletonProject(product, { link, options });
   S.phase = 'generating';
   S.chat = [];
   S.newProductBanner = null;
   delete el.app.dataset.firstCardMs;
   delete el.app.dataset.doneMs;
-  mountPf(7);
+  mountPf(options.mode === 'photo' ? (product.imageIds?.length || 7) : 7);
   S.progress = { label: '계획을 세우는 중', got: null, total: null };
   fn.render();
   const t0 = now();

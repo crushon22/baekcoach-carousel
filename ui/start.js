@@ -7,6 +7,7 @@ import { WHERE } from '../lib/common.js';
 import { h, setChildren, pickImageFile, pickImageFiles, toast } from './dom.js';
 import { S, fn, el, imageUrl } from './app.js';
 import { showError } from './errors.js';
+import { modeTabs, renderPhotoStart, buildPhotoProduct } from './photo.js';
 
 const hasKey = () => !!(S.settings?.has?.geminiKey || S.settings?.devMockAI);
 
@@ -39,6 +40,7 @@ export function currentInfo() {
 /** ai.generate 에 넘길 product. 아직 만들 수 없으면 null. */
 export function buildProduct(kind) {
   const rec = S.rec;
+  if (S.mode === 'photo') return buildPhotoProduct();
   if (IS_WEB) return buildWebProduct(kind || S.webKind || 'manual');
   if (S.sel?.kind === 'search') {
     const base = searchItemToProduct(S.sel.item);
@@ -151,6 +153,7 @@ function thumb(imageId, size = 72) {
 /** 상품 띠 그리기. project 가 있으면 한 줄로 줄여 보여 준다. */
 export function renderStrip() {
   const host = el.strip;
+  if (S.mode === 'photo' && !(S.project && (S.phase === 'ready' || S.phase === 'generating')) && !(!IS_WEB && S.rec?.product)) { host.hidden = true; setChildren(host); return; }
   if (IS_WEB && !(S.project && (S.phase === 'ready' || S.phase === 'generating'))) { host.hidden = true; setChildren(host); return; }
   host.hidden = false;
   applyAccent(S.project?.input?.imageIds?.[0] || currentInfo()?.imageId);
@@ -177,9 +180,9 @@ export function renderStrip() {
       h('div', { class: 'strip-text' },
         h('div', { class: 'strip-title', id: 'strip-title' }, info.title || '(상품 이름을 적어 주세요)'),
         h('div', { class: 'strip-price', id: 'strip-price' }, info.priceText || '가격은 링크에서 확인'),
-        info.kind === 'page' && info.count > 1 ? h('div', { class: 'muted small' }, `사진 ${info.idx + 1} / ${info.count}`) : null)),
+        info.kind === 'page' && info.count > 1 && S.mode !== 'photo' ? h('div', { class: 'muted small' }, `사진 ${info.idx + 1} / ${info.count}`) : null)),
     ...warn.map((w) => h('p', { class: 'warn-line' }, w.messageKo)),
-    h('div', { class: 'btn-row' },
+    S.mode === 'photo' ? null : h('div', { class: 'btn-row' },
       info.kind === 'page' ? h('button', { type: 'button', class: 'btn', id: 'btn-next-photo', onclick: nextPhoto }, '다른 사진') : null,
       h('button', { type: 'button', class: 'btn', id: 'btn-upload', onclick: uploadPhoto }, '내 사진'),
       info.kind === 'page' ? h('button', { type: 'button', class: 'btn', id: 'btn-reread', onclick: async () => { await loadProduct({ refresh: true }); fn.renderStrip(); fn.renderStage(); } }, '다시 읽기') : null,
@@ -301,7 +304,7 @@ async function pickResult(it) {
 
 /** 시작 화면 본문 (단계에 따라 안내/진행) */
 export function renderStartStage() {
-  const kids = [];
+  const kids = [modeTabs()];
   if (S.resume) {
     kids.push(h('section', { class: 'card resume-card', id: 'resume-card' },
       h('strong', null, '하던 작업이 있어요'), h('p', { class: 'muted' }, S.resume.title || '제목 없음'),
@@ -312,6 +315,11 @@ export function renderStartStage() {
   const isPage = !!rec?.product;
   const failed = rec && !rec.product && rec.reason === 'CAPTURE_FAILED';
 
+  if (S.mode === 'photo') {
+    renderPhotoStart(kids, { keyNotice, hasKey });
+    setChildren(el.stage, ...kids);
+    return;
+  }
   if (IS_WEB) {
     renderWebStart(kids);
     setChildren(el.stage, ...kids);

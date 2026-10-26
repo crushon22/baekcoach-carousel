@@ -25,7 +25,7 @@ async function renderHistory() {
       const asking = confirmDelete === p.id;
       return h('li', { class: 'history-item', 'data-id': p.id },
         t,
-        h('div', { class: 'history-text' }, h('strong', null, p.title || '제목 없음'), h('span', { class: 'muted small' }, `${fmtDate(p.updatedAt || p.createdAt)} · ${(p.carousel?.cards || []).length}장${p.mock ? ' · 시험용' : ''}`)),
+        h('div', { class: 'history-text' }, h('strong', null, p.title || '제목 없음'), h('span', { class: 'muted small' }, `${p.carousel?.mode === 'photo' ? '사진' : '카드뉴스'} · ${fmtDate(p.updatedAt || p.createdAt)} · ${(p.carousel?.cards || []).length}장${p.mock ? ' · 시험용' : ''}`)),
         h('div', { class: 'history-actions' },
           asking
             ? [h('button', { type: 'button', class: 'btn btn-warn', 'data-act': 'delete-yes', onclick: async () => { await store.deleteProject(p.id); confirmDelete = null; toast('삭제했어요.'); renderHistory(); } }, '정말 삭제'),
