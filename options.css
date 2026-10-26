@@ -55,3 +55,6 @@ summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; al
 
 .back-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; color: var(--brand-dark); }
 .warn-line { color: var(--warn); font-weight: 700; margin: 6px 0; }
+
+/* hidden 속성이 .input 등의 display 지정에 덮이지 않게 (말투 "직접 쓰기" 칸이 늘 보이던 문제) */
+[hidden] { display: none !important; }
