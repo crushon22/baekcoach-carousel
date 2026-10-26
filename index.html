@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>백코치 캐러셀 메이커</title>
+  <meta name="description" content="쿠팡 상품으로 인스타 캐러셀·캡션·쇼츠 대본을 만들어 주는 도구. 내 Gemini 키로 동작하고, 입력한 내용은 내 브라우저 밖으로 보내지 않아요.">
+  <link rel="icon" type="image/png" href="icons/128.png">
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body data-phase="loading">
+  <header class="topbar" id="topbar">
+    <h1>백코치</h1>
+    <button type="button" id="status-chip" class="status-chip" hidden></button>
+    <div class="topbar-actions">
+      <button type="button" id="btn-history" class="btn">지난 작업</button>
+      <button type="button" id="btn-settings" class="btn">설정</button>
+    </div>
+  </header>
+
+  <div id="alerts" aria-live="assertive"></div>
+
+  <main id="app">
+    <div id="banner" hidden></div>
+    <div id="strip"></div>
+    <div id="notices"></div>
+    <div id="decision" hidden></div>
+    <div id="stage"></div>
+    <div id="phone" hidden></div>
+    <section id="sheet" hidden aria-label="편집 도구">
+      <div class="tabs" role="tablist" aria-label="편집 도구">
+        <button type="button" role="tab" id="tabbtn-edit" aria-controls="tab-edit" aria-selected="true" data-tab="edit">카드 편집</button>
+        <button type="button" role="tab" id="tabbtn-review" aria-controls="tab-review" aria-selected="false" data-tab="review">근거·검수</button>
+        <button type="button" role="tab" id="tabbtn-caption" aria-controls="tab-caption" aria-selected="false" data-tab="caption">캡션·쇼츠</button>
+      </div>
+      <div id="tab-edit" role="tabpanel" aria-labelledby="tabbtn-edit"></div>
+      <div id="tab-review" role="tabpanel" aria-labelledby="tabbtn-review" hidden></div>
+      <div id="tab-caption" role="tabpanel" aria-labelledby="tabbtn-caption" hidden></div>
+    </section>
+  </main>
+
+  <footer id="dock" class="dock" hidden>
+    <div id="chat-log" class="chat-log" hidden aria-live="polite"></div>
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input id="chat-input" class="input" type="text" placeholder="말로 고쳐요. 예: 3번 짧게, 베이지로" aria-label="말로 수정하기">
+      <button type="button" id="chat-mic" class="btn btn-mic" aria-label="말로 입력(마이크)" aria-pressed="false" hidden>🎤</button>
+      <button type="submit" id="chat-send" class="btn btn-primary">보내기</button>
+    </form>
+    <button type="button" id="btn-export" class="btn btn-primary btn-block btn-export">내보내기</button>
+  </footer>
+
+  <div id="overlay" class="overlay" hidden></div>
+  <script src="chrome-shim.js"></script>
+  <script type="module" src="background.js"></script>
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>
