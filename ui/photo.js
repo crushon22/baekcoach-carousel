@@ -7,6 +7,8 @@ import { formatPrice } from '../lib/coupang.js';
 import { h, setChildren, pickImageFiles, toast } from './dom.js';
 import { S, fn, imageUrl } from './app.js';
 import { showError } from './errors.js';
+import { icon } from './icons.js';
+import { fontDetails, pickStartFont } from './fontpick.js';
 
 export const STYLES = [
   { key: 'outline', label: '테두리', desc: '굵은 흰 글씨 + 검은 테두리' },
@@ -26,10 +28,17 @@ export async function loadModePrefs() {
     if (m?.mode === 'photo' || m?.mode === 'cardnews') S.mode = m.mode;
     if (STYLE_LABEL[m?.style]) S.photoStyle = m.style;
     if (typeof m?.adLabel === 'boolean') S.adLabel = m.adLabel;
+    if (typeof m?.font === 'string') S.font = m.font;
   } catch { /* 기억 못 해도 기본값 */ }
 }
+export function fontCard() {
+  return h('section', { class: 'card', id: 'font-card' },
+    fontDetails({ value: S.font, onPick: pickStartFont, id: 'font-picker', open: !!S.fontOpen }),
+    h('p', { class: 'muted small' }, '카드 글씨 모양을 골라요. 열 때만 글꼴을 불러오고, 만든 뒤에도 바꿀 수 있어요.'));
+}
+
 export function saveModePrefs() {
-  store.kvSet('panel.mode', { mode: S.mode, style: S.photoStyle, adLabel: S.adLabel }).catch(() => {});
+  store.kvSet('panel.mode', { mode: S.mode, style: S.photoStyle, adLabel: S.adLabel, font: S.font }).catch(() => {});
 }
 
 // ───────────────────────── 작은 그림(예시·스타일 미리보기) ─────────────────────────
@@ -64,6 +73,7 @@ export function setMode(mode) {
   if (S.mode === mode) return;
   S.mode = mode;
   saveModePrefs();
+  fn.renderModebar();
   fn.renderStrip();
   fn.renderStage();
 }
@@ -160,7 +170,7 @@ function infoForm() {
   const desc = h('textarea', { id: 'photo-desc', class: 'input', rows: 3, placeholder: '상품 설명·특징을 붙여 넣으면 글이 더 정확해져요', 'aria-label': '상품 설명 (선택)' });
   desc.value = S.manual.desc || '';
   desc.addEventListener('input', () => { S.manual.desc = desc.value; });
-  return h('details', { class: 'card', id: 'photo-info', open: !!(S.manual.title || S.manual.desc) },
+  return h('details', { class: 'card extra', id: 'photo-info', open: !!(S.manual.title || S.manual.desc) },
     h('summary', null, '상품 정보 넣기 (선택)'),
     h('div', { class: 'form' },
       h('p', { class: 'muted small' }, '있으면 글이 더 정확해져요. 없어도 사진만 보고 써 줘요. 붙여 넣은 내용은 "내가 입력한 정보"로 기록돼요.'),
@@ -175,25 +185,25 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
   const n = S.photos.length;
   const pageProduct = !IS_WEB && S.rec?.product;
   kids.push(h('section', { class: 'card', id: 'photo-start' },
-    h('h2', null, '사진을 넣어 주세요'),
-    h('p', { class: 'muted' }, `사진 ${MIN_PHOTOS}~${MAX_PHOTOS}장을 순서대로 넣으면, 사진마다 맞는 글을 써 줘요. 사진 순서가 카드 순서예요(1번이 커버).`),
+    h('h2', null, icon('photo', { size: 24, cls: 'h-ico' }), '사진을 넣어 주세요'),
+    h('p', { class: 'muted' }, `사진 ${MIN_PHOTOS}~${MAX_PHOTOS}장을 순서대로 넣어요. 1번이 커버예요.`),
     n ? photoList() : null,
     n ? h('p', { class: 'muted small', id: 'photo-count' }, `지금 ${n}장`) : null,
     h('button', { type: 'button', class: 'btn btn-block', id: 'btn-photo-upload', onclick: uploadPhotos }, n ? '사진 더 올리기' : '사진 올리기 (여러 장 한 번에)'),
     productPhotoPicker()),
-  h('section', { class: 'card', id: 'photo-style' },
+  h('section', { class: 'card extra', id: 'photo-style' },
     h('h2', null, '글씨 스타일'), styleButtons(),
     (() => {
       const cb = h('input', { type: 'checkbox', id: 'ad-label', checked: S.adLabel });
       cb.addEventListener('change', () => { S.adLabel = cb.checked; saveModePrefs(); fn.renderStage(); });
       return h('label', { class: 'check-row', for: 'ad-label' }, cb, h('span', null, '사진 왼쪽 위에 [광고] 표시'));
     })(),
-    S.adLabel ? h('p', { class: 'muted small' }, '쿠팡 파트너스 게시물이면 켜 두세요. 캡션 첫 줄 고지 문구는 따로 항상 들어가요.')
+    S.adLabel ? h('p', { class: 'muted small' }, '파트너스 게시물이면 켜 두세요.')
       : h('p', { class: 'warn-line small', id: 'ad-off-note' }, '파트너스 게시물이면 켜 두세요. 끄면 광고 표시가 사진에 들어가지 않아요.')));
   if (!pageProduct) kids.push(infoForm());
   const make = h('div', { class: 'make-wrap' },
-    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', disabled: n < MIN_PHOTOS, onclick: () => fn.onMake() }, '만들기'),
-    n < MIN_PHOTOS ? h('p', { class: 'warn-line small center', id: 'photo-few' }, `사진을 ${MIN_PHOTOS}장 이상 올려 주세요 (지금 ${n}장)`) : h('p', { class: 'muted small center' }, '누르면 사진마다 글을 쓰고 캡션·쇼츠 대본까지 만들어요.'));
+    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', disabled: n < MIN_PHOTOS, onclick: () => fn.onMake() }, icon('sparkle', { size: 22 }), '만들기'),
+    n < MIN_PHOTOS ? h('p', { class: 'warn-line small center', id: 'photo-few' }, `사진을 ${MIN_PHOTOS}장 이상 올려 주세요 (지금 ${n}장)`) : h('p', { class: 'muted small center' }, '사진마다 글을 쓰고 캡션·쇼츠 대본도 만들어요.'));
   kids.push(make);
 }
 

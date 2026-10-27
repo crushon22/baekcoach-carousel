@@ -2,6 +2,7 @@
 import { request } from '../lib/bus.js';
 import { IS_WEB } from '../lib/platform.js';
 import { normalizeLink, canonicalProductUrl } from '../lib/coupang.js';
+import { h3i } from './icons.js';
 import { h, setChildren, debounce, copyText, toast } from './dom.js';
 import { S, fn, composed, finalTags, shortsText, refreshAll, refreshCaptionInFrame, runReview, scheduleSave, scheduleReview, saveNow } from './app.js';
 import { showError } from './errors.js';
@@ -72,7 +73,7 @@ export function renderCaption() {
 
   const captionSection =
     h('section', { class: 'group' },
-      h('h3', null, '캡션'),
+      h3i('bubble', '캡션'),
       h('label', { class: 'label', for: 'caption-text' }, '캡션 본문 (직접 고칠 수 있어요)'), cap,
       h('div', { class: 'label' }, '올렸을 때 맨 처음 보이는 부분'),
       h('div', { class: 'preview-box', id: 'caption-preview' }),
@@ -81,14 +82,14 @@ export function renderCaption() {
 
   const tagSection =
     h('section', { class: 'group' },
-      h('div', { class: 'label-row' }, h('h3', null, '해시태그'), h('span', { class: 'count', id: 'tag-count' })),
+      h('div', { class: 'label-row' }, h3i('bubble', '해시태그'), h('span', { class: 'count', id: 'tag-count' })),
       tagBox,
       h('p', { class: 'warn-line', id: 'tag-warning' }),
       null);
 
   const linkSection =
     h('section', { class: 'group', id: 'link-group' },
-      h('h3', null, '파트너스 링크'),
+      h3i('link', '파트너스 링크'),
       hasKeys
         ? h('div', null,
           h('button', { type: 'button', class: 'btn btn-block', id: 'btn-deeplink', disabled: ui.linkBusy || !deepOk, onclick: makeDeeplink }, ui.linkBusy ? '링크 만드는 중…' : '링크 만들기'),
@@ -103,7 +104,7 @@ export function renderCaption() {
 
   const finalSection =
     h('section', { class: 'group', id: 'final-group' },
-      h('h3', null, '최종 캡션'),
+      h3i('check', '최종 캡션'),
       h('p', { class: 'muted small' }, '맨 윗줄 고지 문구는 쿠팡 파트너스 규정 때문에 자동으로 들어가고 끌 수 없어요. 문구 모양은 설정에서 고를 수 있어요.'),
       h('div', { class: 'warnings', id: 'caption-warnings' }),
       h('pre', { class: 'final-caption', id: 'final-caption', tabindex: 0 }),
@@ -113,7 +114,7 @@ export function renderCaption() {
 
   const shortsSection =
     h('section', { class: 'group', id: 'shorts-group' },
-      h('h3', null, '쇼츠 대본'),
+      h3i('sparkle', '쇼츠 대본'),
       p.shorts ? h('pre', { class: 'final-caption', id: 'shorts-text', tabindex: 0 }, shortsText(p.shorts)) : h('p', { class: 'muted' }, '아직 쇼츠 대본이 없어요. 아래 버튼으로 만들 수 있어요.'),
       h('div', { class: 'btn-row' },
         p.shorts ? h('button', { type: 'button', class: 'btn btn-primary', id: 'btn-copy-shorts', onclick: async () => toast((await copyText(shortsText(p.shorts))) ? '쇼츠 대본을 복사했어요.' : '복사하지 못했어요.') }, '대본 복사') : null,
@@ -121,7 +122,7 @@ export function renderCaption() {
 
   const convertSection =
     h('section', { class: 'group', id: 'shorts-to-carousel' },
-      h('h3', null, '쇼츠 대본 → 캐러셀'),
+      h3i('sparkle', '쇼츠 대본 → 캐러셀'),
       h('p', { class: 'muted small' }, '가지고 있는 쇼츠 대본을 붙여 넣으면 새 캐러셀을 만들어요. 지금 작업은 "지난 작업"에 저장돼요.'),
       shortsInput());
   // 웹 버전은 링크 붙여넣기를 맨 앞에 둔다(파트너스 API 가 없어서 링크가 가장 중요한 입력)

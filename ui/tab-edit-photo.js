@@ -6,6 +6,8 @@ import { renderCoverVariants } from '../lib/render.js';
 import { Knowledge, effectivePhotoRules } from '../lib/knowledge.js';
 import { syncOverlay } from '../lib/review.js';
 import { WHERE } from '../lib/common.js';
+import { fold } from './fold.js';
+import { fontDetails, setProjectFont, DEFAULT_FONT } from './fontpick.js';
 import { h, setChildren, debounce, pickImageFile, toast } from './dom.js';
 import { S, fn, cards, refreshCard, refreshAll, scheduleReview, scheduleSave, imageUrl } from './app.js';
 import { showError } from './errors.js';
@@ -111,36 +113,30 @@ export async function renderPhotoEdit(host) {
       h('button', { type: 'button', class: 'btn btn-primary', onclick: () => fn.regenerate('card', { index: i, label: `${i + 1}번 카드를 다시 쓰는 중` }) }, '이 카드 다시 만들기')) : null,
     h('div', { id: 'edit-warn' }),
 
-    h('section', { class: 'group', id: 'lines-group' },
-      h('h3', null, '사진 위 글'),
+    fold({ id: 'lines-group', icon: 'text', title: '사진 위 글', open: true },
       lim ? h('p', { class: 'muted small', id: 'line-limit' }, `${lim.minLines === lim.maxLines ? lim.maxLines : `${lim.minLines}~${lim.maxLines}`}줄, 한 줄 ${lim.maxChars}자 안쪽이 보기 좋아요.`) : null,
       ...inputs,
       ui.draft.length < 3 ? h('button', { type: 'button', class: 'btn btn-block', id: 'btn-line-add', onclick: () => { ui.draft.push(''); renderPhotoEdit(host).then(() => document.getElementById(`line-${ui.draft.length - 1}`)?.focus()); } }, '줄 추가') : null),
 
-    h('section', { class: 'group', id: 'highlight-group' },
-      h('h3', null, '강조 단어'),
+    fold({ id: 'highlight-group', icon: 'pen', title: '강조 단어', open: false },
       h('p', { class: 'muted small' }, `단어를 누르면 노란색으로 강조돼요 (한 장에 ${rules?.maxHighlight || 2}개까지).`),
       wordsBox),
 
-    h('section', { class: 'group', id: 'placement-group' },
-      h('h3', null, '글 위치·크기'),
+    fold({ id: 'placement-group', icon: 'text', title: '글 위치·크기', open: false },
       h('div', { class: 'label' }, '위치'), seg(posOptions, ov.position, (v) => setOv({ position: v }), 'overlay-position'),
       style === 'gradient' ? h('p', { class: 'muted small' }, '그라데이션은 글이 위나 아래에만 들어가요.') : null,
       h('div', { class: 'label' }, '글씨 크기'), seg(SIZE, ov.size || 'l', (v) => setOv({ size: v }), 'overlay-size'),
       h('div', { class: 'label' }, '정렬'), seg({ center: '가운데', left: '왼쪽' }, ov.align || defaultAlign, (v) => setOv({ align: v }), 'overlay-align')),
 
-    h('section', { class: 'group', id: 'photo-group' },
-      h('h3', null, '이 카드 사진'),
+    fold({ id: 'photo-group', icon: 'photo', title: '이 카드 사진', open: false },
       photoPicker(card, host),
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-photo-replace', onclick: () => replacePhoto(host) }, '내 사진으로 바꾸기')),
 
-    h('section', { class: 'group', id: 'rewrite-group' },
-      h('h3', null, '다시 쓰기'),
+    fold({ id: 'rewrite-group', icon: 'sparkle', title: '다시 쓰기', open: true },
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-rewrite', disabled: !!ui.busy, onclick: () => rewrite(host) }, ui.busy === 'rewrite' ? '3가지로 쓰는 중…' : '다시 쓰기 3안 보기'),
       ui.rewrite && ui.rewrite.index === i ? rewriteList(ui.rewrite, host) : null),
 
-    i === 0 ? h('section', { class: 'group', id: 'first-card-group' },
-      h('h3', null, '1번 카드(커버) 고르기'),
+    i === 0 ? fold({ id: 'first-card-group', icon: 'sparkle', title: '1번 카드(커버) 고르기', open: false },
       h('p', { class: 'muted small' }, '훅 3안 중 하나를 고르면 커버 문장과 캡션만 다시 써요.'),
       h('div', { class: 'stack', id: 'hook-list' },
         ...(p.plan?.hooks || []).map((hk, k) => h('button', { type: 'button', class: 'option', 'aria-pressed': String(k === (p.plan.hookPick ?? 0)), 'data-hook': k, onclick: () => fn.regenerate('hook', { hookIndex: k, options: { hookIndex: k }, label: '커버 문장을 바꾸는 중' }) },
@@ -149,10 +145,10 @@ export async function renderPhotoEdit(host) {
       ui.covers ? h('div', { class: 'covers', id: 'cover-list' }, ...ui.covers.map((c, k) => h('button', { type: 'button', class: 'cover-btn', 'data-cover': k, 'aria-label': `커버 ${k + 1}안: 글 ${POS[c.position] || c.position}`, onclick: () => applyCover(c, host) },
         h('img', { src: c.url, alt: '' }), h('span', { class: 'small' }, `글 ${POS[c.position] || c.position}`)))) : null) : null,
 
-    h('section', { class: 'group', id: 'design-group' },
-      h('h3', null, '글씨 스타일·광고 표시'),
+    fold({ id: 'design-group', icon: 'palette', title: '글씨 스타일·광고 표시', open: false },
       h('div', { class: 'chips', id: 'style-chips', role: 'group', 'aria-label': '글씨 스타일' },
         ...STYLES.map((s) => h('button', { type: 'button', class: 'chip', 'data-style': s.key, 'aria-pressed': String(style === s.key), onclick: () => fn.setPhotoStyle(s.key) }, s.label))),
+      fontDetails({ value: p.carousel.font || DEFAULT_FONT, onPick: setProjectFont, id: 'font-picker', open: !!S.fontOpen }),
       adToggle(p, host),
       p.carousel.adLabel === false ? h('p', { class: 'warn-line small' }, '파트너스 게시물이면 켜 두세요.') : null));
   renderWords();

@@ -3,6 +3,7 @@ import { stream } from '../lib/bus.js';
 import { S, fn, el, BRAND, cards, mountPf, unmountPf, refreshCard, refreshAll, updateStatus, composed, saveNow, scheduleSave } from './app.js';
 import { deepClone, toast } from './dom.js';
 import { showError, clearErrors } from './errors.js';
+import { ensureCardFont } from './fontpick.js';
 
 const now = () => performance.now();
 
@@ -13,6 +14,7 @@ function skeletonProject(product, { link, options = {} }) {
     carousel: {
       type: '', template: 'basic', brandColor: BRAND, accountName: S.settings?.accountName || '', ...(S.settings?.logoImageId ? { logoImageId: S.settings.logoImageId } : {}),
       peek: false, panorama: false, hasPartnersLink: !!link, cards: [],
+      font: S.font || 'pretendard',
       ...(photo ? { mode: 'photo', overlayStyle: options.overlayStyle || 'outline', adLabel: options.adLabel !== false } : {}),
     },
     facts: [], factsInfo: null, caption: '', hashtags: [], issues: [], score: null, shorts: null, notices: [],
@@ -87,6 +89,8 @@ function finishWith(done, prev, { fresh = false } = {}) {
   if (prev.id) project.id = prev.id;
   if (prev.carousel?.accentColor && !project.carousel.accentColor) project.carousel.accentColor = prev.carousel.accentColor;
   project.carousel.hasPartnersLink = !!project.link;
+  // 글씨체: 처음 만들 때는 시작 화면에서 고른 것, 다시 만들 때는 이전 값을 유지(lib 가 넣어 주면 그 값)
+  if (!project.carousel.font) project.carousel.font = (fresh ? S.font : prev.carousel?.font) || 'pretendard';
   S.project = project;
 }
 
@@ -100,6 +104,7 @@ export async function startGenerate(product, { options = {}, link = '' } = {}) {
   S.newProductBanner = null;
   delete el.app.dataset.firstCardMs;
   delete el.app.dataset.doneMs;
+  await ensureCardFont(S.font);
   mountPf(options.mode === 'photo' ? (product.imageIds?.length || 7) : 7);
   S.progress = { label: '계획을 세우는 중', got: null, total: null };
   fn.render();

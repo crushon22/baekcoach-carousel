@@ -7,14 +7,16 @@
   <meta name="description" content="쿠팡 상품으로 인스타 캐러셀·캡션·쇼츠 대본을 만들어 주는 도구. 내 Gemini 키로 동작하고, 입력한 내용은 내 브라우저 밖으로 보내지 않아요.">
   <link rel="icon" type="image/png" href="icons/128.png">
   <link rel="stylesheet" href="sidepanel.css">
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body data-phase="loading">
   <header class="topbar" id="topbar">
-    <h1>백코치</h1>
+    <h1 class="brand"><span id="brand-logo"></span><span class="brand-text">백코치 <span class="h1-sub">캐러셀</span></span></h1>
     <button type="button" id="status-chip" class="status-chip" hidden></button>
     <div class="topbar-actions">
-      <button type="button" id="btn-history" class="btn">지난 작업</button>
-      <button type="button" id="btn-settings" class="btn">설정</button>
+      <button type="button" id="btn-guide" class="btn help-btn" aria-label="사용 방법" title="사용 방법" data-icon="help"><span class="help-label">사용 방법</span></button>
+      <button type="button" id="btn-history" class="btn icon-btn" aria-label="지난 작업" title="지난 작업" data-icon="clock"></button>
+      <button type="button" id="btn-settings" class="btn icon-btn" aria-label="설정" title="설정" data-icon="gear"></button>
     </div>
   </header>
 
@@ -22,6 +24,8 @@
 
   <main id="app">
     <div id="banner" hidden></div>
+    <div id="hero"></div>
+    <div id="modebar"></div>
     <div id="strip"></div>
     <div id="notices"></div>
     <div id="decision" hidden></div>
@@ -29,9 +33,9 @@
     <div id="phone" hidden></div>
     <section id="sheet" hidden aria-label="편집 도구">
       <div class="tabs" role="tablist" aria-label="편집 도구">
-        <button type="button" role="tab" id="tabbtn-edit" aria-controls="tab-edit" aria-selected="true" data-tab="edit">카드 편집</button>
-        <button type="button" role="tab" id="tabbtn-review" aria-controls="tab-review" aria-selected="false" data-tab="review">근거·검수</button>
-        <button type="button" role="tab" id="tabbtn-caption" aria-controls="tab-caption" aria-selected="false" data-tab="caption">캡션·쇼츠</button>
+        <button type="button" role="tab" id="tabbtn-edit" aria-controls="tab-edit" aria-selected="true" data-tab="edit" data-icon="pen">카드 편집</button>
+        <button type="button" role="tab" id="tabbtn-review" aria-controls="tab-review" aria-selected="false" data-tab="review" data-icon="search">근거·검수</button>
+        <button type="button" role="tab" id="tabbtn-caption" aria-controls="tab-caption" aria-selected="false" data-tab="caption" data-icon="bubble">캡션·쇼츠</button>
       </div>
       <div id="tab-edit" role="tabpanel" aria-labelledby="tabbtn-edit"></div>
       <div id="tab-review" role="tabpanel" aria-labelledby="tabbtn-review" hidden></div>
@@ -43,10 +47,10 @@
     <div id="chat-log" class="chat-log" hidden aria-live="polite"></div>
     <form id="chat-form" class="chat-form" autocomplete="off">
       <input id="chat-input" class="input" type="text" placeholder="말로 고쳐요. 예: 3번 짧게, 베이지로" aria-label="말로 수정하기">
-      <button type="button" id="chat-mic" class="btn btn-mic" aria-label="말로 입력(마이크)" aria-pressed="false" hidden>🎤</button>
-      <button type="submit" id="chat-send" class="btn btn-primary">보내기</button>
+      <button type="button" id="chat-mic" class="btn btn-mic" aria-label="말로 입력(마이크)" aria-pressed="false" data-icon="mic" hidden><span class="lbl mic-lbl" hidden>듣는 중</span></button>
+      <button type="submit" id="chat-send" class="btn btn-primary" data-icon="send"><span class="lbl">보내기</span></button>
     </form>
-    <button type="button" id="btn-export" class="btn btn-primary btn-block btn-export">내보내기</button>
+    <button type="button" id="btn-export" class="btn btn-primary btn-block btn-export" data-icon="sparkle">내보내기</button>
   </footer>
 
   <div id="overlay" class="overlay" hidden></div>

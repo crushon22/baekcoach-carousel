@@ -56,7 +56,7 @@ function setBusy(b) {
   const input = document.getElementById('chat-input');
   const btn = document.getElementById('chat-send');
   if (input) input.disabled = b;
-  if (btn) { btn.disabled = b; btn.textContent = b ? '처리 중' : '보내기'; }
+  if (btn) { btn.disabled = b; const l = btn.querySelector('.lbl'); if (l) l.textContent = b ? '처리 중' : '보내기'; }
 }
 
 const MIC_ERRORS = {
@@ -77,15 +77,15 @@ function setupMic() {
     const r = new SR();
     r.lang = 'ko-KR'; r.interimResults = false; r.maxAlternatives = 1;
     recog = r;
-    btn.setAttribute('aria-pressed', 'true'); btn.textContent = '듣는 중';
+    btn.setAttribute('aria-pressed', 'true'); btn.querySelector('.mic-lbl').hidden = false;
     r.onresult = (e) => {
       const t = Array.from(e.results).map((x) => x[0].transcript).join(' ').trim();
       const input = document.getElementById('chat-input');
       input.value = (input.value ? input.value + ' ' : '') + t;
     };
     r.onerror = (e) => toast(MIC_ERRORS[e.error] || `음성 입력 오류(${e.error}). 글로 입력해 주세요.`, { kind: 'warn', ms: 4000 });
-    r.onend = () => { recog = null; btn.setAttribute('aria-pressed', 'false'); btn.textContent = '🎤'; };
-    try { r.start(); } catch (err) { recog = null; btn.textContent = '🎤'; toast('음성 입력을 시작하지 못했어요.', { kind: 'warn' }); }
+    r.onend = () => { recog = null; btn.setAttribute('aria-pressed', 'false'); btn.querySelector('.mic-lbl').hidden = true; };
+    try { r.start(); } catch (err) { recog = null; btn.querySelector('.mic-lbl').hidden = true; toast('음성 입력을 시작하지 못했어요.', { kind: 'warn' }); }
   });
 }
 

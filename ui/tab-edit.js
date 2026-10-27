@@ -3,6 +3,8 @@ import { request } from '../lib/bus.js';
 import { WHERE } from '../lib/common.js';
 import * as store from '../lib/store.js';
 import { TEMPLATES, LAYOUTS, renderCoverVariants, extractColorsFromImageId } from '../lib/render.js';
+import { fold } from './fold.js';
+import { fontDetails, setProjectFont, DEFAULT_FONT } from './fontpick.js';
 import { h, setChildren, debounce, pickImageFile, toast } from './dom.js';
 import { renderPhotoEdit, resetPhotoCardState, startRewrite as startPhotoRewrite } from './tab-edit-photo.js';
 import { S, fn, cards, mainImageId, isPhoto, refreshCard, refreshAll, scheduleReview, scheduleSave, cardMeta, imageUrl } from './app.js';
@@ -69,15 +71,13 @@ export function renderEdit() {
       tableTip ? h('p', { class: 'warn-line' }, '표 모양인데 "항목|내용" 줄이 없어요. 본문을 이 모양으로 고치거나 다른 모양을 고르세요.') : null),
 
     // 모양
-    h('section', { class: 'group' },
-      h('h3', null, '카드 모양'),
+    fold({ id: 'layout-group', icon: 'cards', title: '카드 모양', open: false },
       h('div', { class: 'chips', id: 'layout-chips', role: 'group', 'aria-label': '레이아웃' },
         ...LAYOUTS.map((l) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String((card.layout || '') === l), 'data-layout': l, onclick: () => setLayout(l) }, LAYOUT_LABELS[l] || l))),
       !card.layout ? h('p', { class: 'muted small' }, '지금은 자동으로 정해진 모양이에요. 고르면 그 모양으로 고정돼요.') : null),
 
     // 사진
-    h('section', { class: 'group', id: 'photo-group' },
-      h('h3', null, '사진'),
+    fold({ id: 'photo-group', icon: 'photo', title: '사진', open: false },
       h('div', { class: 'btn-row' },
         h('button', { type: 'button', class: 'btn', id: 'btn-photos', 'aria-expanded': String(ui.photosOpen), onclick: () => { ui.photosOpen = !ui.photosOpen; renderEdit(); } }, '상품 사진'),
         h('button', { type: 'button', class: 'btn', id: 'btn-photo-upload', onclick: uploadForCard }, '내 사진'),
@@ -89,14 +89,12 @@ export function renderEdit() {
         h('button', { type: 'button', class: 'btn', id: 'btn-photo-remove', onclick: removePhoto }, '사진 빼기')) : h('p', { class: 'muted small' }, '이 카드에는 사진이 없어요.')),
 
     // 다시 쓰기
-    h('section', { class: 'group', id: 'rewrite-group' },
-      h('h3', null, '다시 쓰기'),
+    fold({ id: 'rewrite-group', icon: 'sparkle', title: '다시 쓰기', open: true },
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-rewrite', disabled: !!ui.busy, onclick: rewrite }, ui.busy === 'rewrite' ? '3가지로 쓰는 중…' : '다시 쓰기 3안 보기'),
       ui.rewrite && ui.rewrite.index === i ? rewriteList(ui.rewrite) : null),
 
     // 1번 카드 전용
-    i === 0 ? h('section', { class: 'group', id: 'first-card-group' },
-      h('h3', null, '1번 카드(훅) 고르기'),
+    i === 0 ? fold({ id: 'first-card-group', icon: 'sparkle', title: '1번 카드(훅) 고르기', open: false },
       h('p', { class: 'muted small' }, '훅 3안 중 하나를 고르면 1번 카드와 캡션만 다시 써요.'),
       h('div', { class: 'stack', id: 'hook-list' },
         ...(p.plan?.hooks || []).map((hk, k) => h('button', { type: 'button', class: 'option', 'aria-pressed': String(k === (p.plan.hookPick ?? 0)), 'data-hook': k, onclick: () => fn.regenerate('hook', { hookIndex: k, options: { hookIndex: k }, label: '훅을 바꾸는 중' }) },
@@ -105,8 +103,9 @@ export function renderEdit() {
       ui.covers ? coverList(ui.covers) : null) : null,
 
     // 전체 디자인
-    h('section', { class: 'group', id: 'design-group' },
-      h('h3', null, '전체 디자인'),
+    fold({ id: 'design-group', icon: 'palette', title: '전체 디자인', open: false },
+      fontDetails({ value: p.carousel.font || DEFAULT_FONT, onPick: setProjectFont, id: 'font-picker', open: !!S.fontOpen }),
+      h('div', { class: 'label' }, '템플릿'),
       h('div', { class: 'chips', id: 'template-chips', role: 'group', 'aria-label': '템플릿' },
         ...Object.keys(TEMPLATES).map((t) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(p.carousel.template === t), 'data-template': t, onclick: () => setTemplate(t) },
           h('span', { class: 'dot', style: { background: TEMPLATES[t].bg || '#2F5BEA', borderColor: TEMPLATES[t].accent } }), TEMPLATE_LABELS[t]))),

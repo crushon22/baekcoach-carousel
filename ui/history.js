@@ -5,6 +5,7 @@ import { S, fn, el, saveNow, mountPf, imageUrl } from './app.js';
 import { showError, clearErrors } from './errors.js';
 import { closeOverlay } from './export.js';
 import { loadChat } from './dock.js';
+import { ensureCardFont } from './fontpick.js';
 
 let confirmDelete = null;
 
@@ -53,6 +54,7 @@ export async function openProject(id) {
     S.tab = 'edit'; S.cardIndex = 0;
     S.newProductBanner = null;
     await loadChat(p.id);
+    await ensureCardFont(p.carousel.font);
     mountPf(p.carousel.cards.length);
     closeOverlay();
     fn.render();

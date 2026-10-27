@@ -9,7 +9,9 @@ import { TYPE_LABELS } from './ui/labels.js';
 import { PURPOSES } from './lib/ai-util.js';
 import { COUNT_OPTIONS } from './ui/labels.js';
 import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey } from './ui/start.js';
-import { STYLES, STYLE_LABEL, loadModePrefs, MIN_PHOTOS } from './ui/photo.js';
+import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs } from './ui/photo.js';
+import { decorateIcons, logoMark, icon } from './ui/icons.js';
+import { openGuide, guideBand, guideSeen, markGuideSeen } from './ui/guide.js';
 import { startGenerate, regenerate, cancelStream } from './ui/stream.js';
 import { renderEdit, renderEditMeta, onCardIndexChanged, startRewrite } from './ui/tab-edit.js';
 import { renderReview, gotoCard } from './ui/tab-review.js';
@@ -19,7 +21,7 @@ import { openExport, closeOverlay } from './ui/export.js';
 import { openHistory, openProject } from './ui/history.js';
 
 // ───────────────────────── 화면 자리 ─────────────────────────
-for (const id of ['app', 'banner', 'strip', 'notices', 'decision', 'stage', 'phone', 'sheet', 'dock', 'overlay']) el[id] = document.getElementById(id);
+for (const id of ['app', 'banner', 'hero', 'modebar', 'strip', 'notices', 'decision', 'stage', 'phone', 'sheet', 'dock', 'overlay']) el[id] = document.getElementById(id);
 
 const TABS = ['edit', 'review', 'caption'];
 
@@ -110,10 +112,26 @@ function renderProgress() {
   const pr = S.progress || {};
   const pct = pr.total ? Math.round(((pr.got || 0) / pr.total) * 100) : 8;
   setChildren(el.stage, h('div', { class: 'card progress-card', id: 'progress-card', role: 'status' },
-    h('div', { class: 'progress-label', id: 'progress-label' }, pr.total ? `${pr.label} · ${pr.got || 0}/${pr.total}` : pr.label || '만드는 중'),
+    h('div', { class: 'progress-label', id: 'progress-label' }, icon('sparkle', { size: 20, cls: 'h-ico' }), pr.total ? `${pr.label} · ${pr.got || 0}/${pr.total}` : pr.label || '만드는 중'),
     h('div', { class: 'progress', 'aria-hidden': 'true' }, h('div', { class: 'progress-bar', style: { width: pct + '%' } })),
     h('p', { class: 'muted small' }, '카드가 만들어지는 대로 아래 폰 화면에 하나씩 나타나요.'),
     h('button', { type: 'button', class: 'btn', id: 'btn-cancel', onclick: () => cancelStream() }, '취소')));
+}
+
+/** 시작 화면 맨 위: 히어로 문구 + 버전 고르기 */
+function renderHero() {
+  if (S.phase !== 'start') { el.hero.replaceChildren(); return; }
+  setChildren(el.hero, h('span', { class: 'hero-blob', 'aria-hidden': 'true' }),
+    h('h2', { class: 'hero-title' }, '상품 사진 넣고', h('br'), h('span', { class: 'grad' }, '캐러셀 한 번에')),
+    null);
+}
+
+function renderModebar() {
+  if (S.phase !== 'start') { el.modebar.replaceChildren(); return; }
+  const kids = [];
+  if (!S.guideSeen) kids.push(guideBand({ onClose: () => { S.guideSeen = true; markGuideSeen(); renderModebar(); } }));
+  kids.push(modeTabs());
+  setChildren(el.modebar, ...kids);
 }
 
 function renderStage() {
@@ -145,6 +163,8 @@ function render() {
   document.body.dataset.phase = S.phase;
   document.body.dataset.streaming = S.stream ? '1' : '';
   renderBanner();
+  renderHero();
+  renderModebar();
   renderStrip();
   renderNotices();
   renderDecision();
@@ -207,8 +227,8 @@ async function openOptions() {
 function onCardIndex() { onCardIndexChanged(); if (S.tab === 'review' && S.phase === 'ready') renderReview(); }
 
 Object.assign(fn, {
-  render, renderStrip, renderStage, renderProgress, renderDecision, renderNotices, renderTab, openTab, onMake, makeFromShorts, startNew, openOptions,
-  regenerate, startGenerate, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
+  render, renderStrip, renderStage, renderModebar, renderProgress, renderDecision, renderNotices, renderTab, openTab, onMake, makeFromShorts, startNew, openOptions,
+  regenerate, startGenerate, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, saveModePrefs, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
 });
 
 // ───────────────────────── 시작 ─────────────────────────
@@ -244,9 +264,14 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   const t = Number(params.get('tabId'));
   S.fixedTab = Number.isInteger(t) && t > 0 ? t : undefined;
+  S.unfold = params.get('unfold') === '1';   // 시험용: 접힌 섹션을 모두 펼쳐서 연다
+  S.guideSeen = await guideSeen();
 
+  document.getElementById('brand-logo').append(logoMark(30));
+  decorateIcons();
   initDock();
   document.getElementById('btn-settings').addEventListener('click', openOptions);
+  document.getElementById('btn-guide').addEventListener('click', () => openGuide());
   document.getElementById('btn-history').addEventListener('click', openHistory);
   document.getElementById('status-chip').addEventListener('click', () => { if (S.phase === 'ready') openTab('review', { scroll: true }); });
   document.querySelectorAll('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => openTab(b.dataset.tab)));

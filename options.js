@@ -5,6 +5,8 @@ import { WHERE } from './lib/common.js';
 import * as store from './lib/store.js';
 import { h, setChildren, fmtDate } from './ui/dom.js';
 import { errorBox, normalizeError } from './ui/errors.js';
+import { icon, logoMark } from './ui/icons.js';
+import { openGuide } from './ui/guide.js';
 
 let settings = null;
 const $id = (id) => document.getElementById(id);
@@ -29,7 +31,7 @@ async function save(patch) {
   return settings;
 }
 
-const badge = (has) => h('span', { class: `badge ${has ? 'badge-ok' : 'badge-no'}` }, has ? '저장됨' : '아직 없음');
+const badge = (has) => h('span', { class: `badge ${has ? 'badge-ok' : 'badge-no'}` }, has ? icon('check', { size: 16 }) : null, has ? '저장됨' : '아직 없음');
 
 // ───────────────────────── 첫 진입 고지 ─────────────────────────
 
@@ -129,8 +131,9 @@ function renderGemini() {
   });
 
   setChildren(host,
-    h('div', { class: 'field-head' }, h('h2', { id: 'gemini-h' }, 'Gemini 키 (필수)'), h('span', { id: 'gemini-state' }, badge(settings.has.geminiKey))),
+    h('div', { class: 'field-head' }, h('h2', { id: 'gemini-h' }, icon('key', { size: 22 }), 'Gemini 키 (필수)'), h('span', { id: 'gemini-state' }, badge(settings.has.geminiKey))),
     h('p', null, '글과 이미지는 내 Gemini 키로 만들어요. aistudio.google.com/apikey 에서 무료로 만들 수 있어요(결제 연결 없이).'),
+    h('button', { type: 'button', class: 'btn btn-quiet', id: 'btn-key-howto', onclick: () => openGuide({ focus: 'faq-key' }) }, icon('help', { size: 18 }), '키 만드는 법'),
     IS_WEB ? h('p', { class: 'muted small', id: 'key-help' }, '결제를 연결하지 않은 새 프로젝트에서 키를 만들어야 무료로 쓸 수 있어요. "크레딧이 소진됐어요(402)" 같은 오류가 나면 새 프로젝트에서 만든 키로 바꿔 보세요.') : null,
     IS_WEB ? h('p', { class: 'warn-line small', id: 'key-storage-note' }, '이 키는 이 브라우저(이 사이트)에만 저장돼요. 공용 컴퓨터에서는 다 쓴 뒤 "저장된 키 지우기"를 꼭 눌러 주세요.') : null,
     h('label', { class: 'label', for: 'gemini-key' }, 'Gemini 키'), input,
@@ -162,7 +165,7 @@ async function renderAccount() {
   });
 
   setChildren(host,
-    h('h2', { id: 'account-h' }, '내 계정'),
+    h('h2', { id: 'account-h' }, icon('heart', { size: 22 }), '내 계정'),
     h('label', { class: 'label', for: 'account-name' }, '인스타 계정명'), name,
     h('label', { class: 'label', for: 'tone-select' }, '말투'), toneSel, toneCustom,
     h('div', { class: 'btn-row' }, saveBtn), result);
@@ -201,7 +204,7 @@ function renderBackup() {
     file.value = '';
   });
   setChildren(host,
-    h('h2', { id: 'backup-h' }, '백업'),
+    h('h2', { id: 'backup-h' }, icon('backup', { size: 22 }), '백업'),
     h('p', null, '지난 작업과 설정을 파일로 저장해 두거나 다른 컴퓨터로 옮길 수 있어요. API 키는 안전을 위해 백업에 넣지 않아요.'),
     h('div', { class: 'btn-row' }, exp, imp, file), result);
 }
@@ -220,10 +223,12 @@ async function clearRemovedSettings() {
 }
 
 async function boot() {
+  const h1 = document.querySelector('#options > h1');
+  if (h1) h1.prepend(logoMark(34));
   if (IS_WEB) {
     document.documentElement.classList.add('web');
     const main = $id('options');
-    main.prepend(h('a', { class: 'back-link', id: 'back-link', href: 'index.html' }, '← 만들기로 돌아가기'));
+    main.prepend(h('a', { class: 'back-link', id: 'back-link', href: 'index.html' }, icon('arrowLeft', { size: 20 }), '만들기로 돌아가기'));
   }
   try { settings = await request('core.getSettings'); } catch (e) {
     setChildren($id('alerts'), errorBox(normalizeError(e), { title: '설정을 불러오지 못했어요' }));

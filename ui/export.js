@@ -4,6 +4,7 @@ import { buildExportZip, downloadZip } from '../lib/render.js';
 import { h, setChildren, toast } from './dom.js';
 import { S, fn, el, isPhoto, cards, composed, finalTags, shortsText, factIssues, cardMeta, saveNow } from './app.js';
 import { showError, errorBox, normalizeError } from './errors.js';
+import { ensureCardFont } from './fontpick.js';
 
 const st = { manual: { price: false, order: false, click: false }, opts: { c9x16: true, c1x1: false, textless: false }, confirming: false, busy: null, done: null, error: null };
 let checks = null;
@@ -128,6 +129,7 @@ async function doExport() {
   renderExport();
   try {
     await saveNow();
+    await ensureCardFont(p.carousel.font);
     const carousel = { ...p.carousel, hasPartnersLink: !!p.link };
     const zip = await buildExportZip(carousel, {
       caption: c.text, hashtags: finalTags(), shortsScript: shortsText(p.shorts),
