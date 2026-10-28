@@ -1,0 +1,145 @@
+/* ───── PC 웹 화면 (2026-10-28, 참고: ElevenLabs·Suno 앱) ─────
+   웹 버전(html.web) 1040px 이상에서만 쓴다. 확장 사이드 패널·휴대폰 폭은 건드리지 않는다.
+   구성: 왼쪽 메뉴(240px) │ 작업 영역. 결과 화면은 가운데 회색 캔버스에 카드 미리보기, 오른쪽 480px 편집 칸.
+   색: 흰 바탕·옅은 회색 선·검은 주 버튼, 파랑은 선택·포커스 표시에만. 글씨: Pretendard UI 하나(제목 700, 본문 500).
+   크기 규칙은 그대로: 글자 16px 이상, 누르는 곳 44px 이상. */
+
+@media (min-width: 1040px) {
+  html.web {
+    --d-ink: #0A0A0A; --d-body: #3F3F46; --d-sub: #71717A; --d-line: #E4E4E7;
+    --d-side: #FAFAFA; --d-canvas: #F4F4F5; --d-hover: #EFEFF1; --d-side-w: 240px; --d-insp-w: 480px;
+    --ink: var(--d-ink); --body: var(--d-body); --sub: var(--d-sub); --muted: var(--d-sub); --line: var(--d-line);
+    --font-cute: "Pretendard UI", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  }
+  html.web .guide-slide-title, html.web .mock-title { font-weight: 700 !important; letter-spacing: -0.025em !important; }
+  html.web .guide-tab, html.web .faq > summary { font-weight: 600 !important; }
+  html.web body { background: #fff; }
+
+  /* 글씨: 귀여운 제목 글씨(주아) 대신 Pretendard UI */
+  html.web h1, html.web h2, html.web h3, html.web .hero-title, html.web .guide-title, html.web .guide-h, html.web .qs-title,
+  html.web .brand-text, html.web .h1-sub, html.web .mode-tab, html.web .tabs [role=tab], html.web .btn-primary, html.web .label,
+  html.web .fold > summary, html.web .seg-label, html.web .decide-chip, html.web .pill-badge, html.web .band-head, html.web .band-txt,
+  html.web .status-chip, html.web .strip-title, html.web .sheet-head, html.web .guide-step-text strong {
+    font-family: "Pretendard UI", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif !important; letter-spacing: -0.01em !important;
+  }
+  html.web h1, html.web h2, html.web h3, html.web .hero-title, html.web .brand-text, html.web .sheet-head, html.web .guide-title { font-weight: 700 !important; letter-spacing: -0.025em !important; }
+  html.web .btn-primary, html.web .label, html.web .fold > summary, html.web .mode-tab, html.web .tabs [role=tab][aria-selected="true"], html.web .status-chip, html.web .decide-chip { font-weight: 600 !important; }
+  html.web .tabs [role=tab] { font-weight: 500 !important; }
+
+  /* ── 왼쪽 메뉴 ── */
+  html.web .topbar {
+    position: fixed; inset: 0 auto 0 0; z-index: 30; width: var(--d-side-w); min-height: 0; height: 100vh;
+    display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 20px 12px 16px;
+    background: var(--d-side); border: 0; border-right: 1px solid var(--d-line); box-shadow: none;
+  }
+  html.web .topbar .brand { display: flex; align-items: center; gap: 10px; margin: 0 8px 20px; font-size: 17px; }
+  html.web .topbar .brand-text { font-size: 17px; color: var(--d-ink); }
+  html.web .topbar .h1-sub { display: inline; color: var(--d-ink); }
+  html.web .status-chip { justify-content: flex-start; width: 100%; padding: 0 12px; border-radius: 10px; margin-bottom: 8px; background: #fff; border: 1px solid var(--d-line); }
+  html.web .status-chip:hover { background: var(--d-hover); }
+  html.web .topbar-actions { display: flex; flex-direction: column; align-items: stretch; gap: 2px; flex: 1 1 auto; margin: 0; }
+  html.web .topbar-actions .btn {
+    order: 2; display: flex; justify-content: flex-start; gap: 10px; width: 100% !important; min-height: 44px; padding: 0 12px !important;
+    border: 0; border-radius: 10px !important; background: transparent; color: var(--d-body) !important; font-weight: 500; font-size: 16px; text-align: left;
+  }
+  html.web .topbar-actions .btn .ico { margin: 0; color: var(--d-sub); width: 20px; height: 20px; }
+  html.web .topbar-actions .btn:hover:not(:disabled) { background: var(--d-hover); color: var(--d-ink) !important; }
+  html.web .help-label, html.web .nav-label { display: inline !important; }
+  html.web #btn-nav-new { order: 0; display: flex; margin-bottom: 12px; background: var(--d-ink); color: #fff !important; font-weight: 600; justify-content: center; border-radius: 9999px !important; }
+  html.web #btn-nav-new .ico { color: #fff; }
+  html.web #btn-nav-new:hover:not(:disabled) { background: #27272A; color: #fff !important; }
+  html.web #btn-history { order: 1; }
+  html.web #btn-guide { order: 2; }
+  html.web #btn-settings { order: 3; margin-top: auto; }
+  html.web body[data-phase="start"] #btn-nav-new { background: #fff; color: var(--d-ink) !important; border: 1px solid var(--d-line); }
+  html.web body[data-phase="start"] #btn-nav-new .ico { color: var(--d-ink); }
+  html.web body[data-phase="start"] #btn-nav-new:hover:not(:disabled) { background: var(--d-hover); color: var(--d-ink) !important; }
+  html.web .nav-foot { display: block; margin: 12px 8px 0; padding-top: 12px; border-top: 1px solid var(--d-line); font-size: 16px; line-height: 1.5; color: var(--d-sub); }
+
+  /* 메뉴 옆 작업 영역 */
+  html.web #alerts, html.web main#app { margin-left: var(--d-side-w); }
+  html.web main#app { max-width: none; padding: 0; }
+
+  /* ── 주 버튼: 검은 알약 ── */
+  html.web .btn-primary, html.web .btn-big, html.web #btn-export { background: var(--d-ink); border-color: var(--d-ink); color: #fff; }
+  html.web .btn-primary:hover:not(:disabled), html.web .btn-big:hover:not(:disabled), html.web #btn-export:hover:not(:disabled) { background: #27272A; border-color: #27272A; }
+  html.web .btn-big:disabled { background: #D4D4D8; border-color: #D4D4D8; color: #fff; }
+  html.web .btn { border-color: var(--d-line); border-radius: 10px; }
+  html.web .input { border-color: #D4D4D8; border-radius: 10px; }
+  html.web .input:focus { border-color: var(--d-ink); outline: 2px solid rgba(10, 10, 10, .12); outline-offset: 0; }
+  html.web .chip, html.web .tag { border-radius: 9999px; padding-inline: 16px; }
+
+  /* ── 시작 화면: 왼쪽 입력(만드는 칸) · 오른쪽 첫 카드 미리보기 ── */
+  html.web body[data-phase="start"] #app, html.web body[data-phase="loading"] #app {
+    display: grid; grid-template-columns: minmax(0, 640px) minmax(0, 400px); column-gap: 56px; align-items: start; justify-content: center;
+    max-width: none; padding: 56px 48px 80px; grid-template-rows: none;
+  }
+  html.web body[data-phase="start"] #app > * { grid-column: 1; }
+  html.web body[data-phase="start"] #app > #livepreview { grid-column: 2; grid-row: 1 / span 12; position: sticky; top: 40px; align-self: start; padding: 20px; background: var(--d-canvas); border-radius: 20px; }
+  html.web body[data-phase="start"] .preview-frame { max-width: 360px; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.08); border-radius: 14px; }
+  html.web body[data-phase="start"] #hero { padding: 0; }
+  html.web body[data-phase="start"] .hero-title { font-size: 34px; line-height: 1.3; color: var(--d-ink); margin: 0; }
+  html.web body[data-phase="start"] #modebar { display: flex; flex-direction: column; gap: 16px; }
+  html.web .guide-band { background: #fff; border-color: var(--d-line); border-radius: 12px; }
+  /* 카드뉴스 | 사진 캐러셀: 작은 알약 스위치 */
+  html.web body[data-phase="start"] .mode-tabs { display: inline-flex; align-self: flex-start; gap: 4px; padding: 4px; background: var(--d-canvas); border-radius: 9999px; }
+  html.web body[data-phase="start"] .mode-tab { min-height: 44px; padding: 0 20px; border: 0; border-radius: 9999px; background: transparent; color: var(--d-sub); box-shadow: none; font-size: 16px; }
+  html.web body[data-phase="start"] .mode-tab[aria-selected="true"] { background: #fff; color: var(--d-ink); box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--d-line); }
+  /* 만드는 칸: 입력·사진·옵션·만들기를 한 판에 */
+  html.web body[data-phase="start"] #stage {
+    display: flex; flex-direction: column; gap: 20px; padding: 28px; background: #fff;
+    border: 1px solid var(--d-line); border-radius: 20px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.04);
+  }
+  html.web body[data-phase="start"] #stage > * { margin: 0; }
+  html.web body[data-phase="start"] #manual-title, html.web body[data-phase="start"] #photo-title { font-size: 18px; min-height: 52px; padding: 12px 14px; }
+  html.web body[data-phase="start"] .make-wrap .btn-big { width: auto; min-width: 200px; align-self: flex-end; }
+  html.web body[data-phase="start"] .make-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  html.web body[data-phase="start"] .make-wrap > p { text-align: right; }
+  html.web body[data-phase="start"] details.extra > summary, html.web body[data-phase="start"] .opt-row { color: var(--d-body); }
+  html.web body[data-phase="start"] #stage .extra { border-top: 1px solid var(--d-line); padding-top: 4px; }
+
+  /* ── 결과 화면: 가운데 캔버스(폰 미리보기) │ 오른쪽 편집 칸 ── */
+  html.web body[data-phone] #app {
+    display: grid; grid-template-columns: minmax(0, 1fr) var(--d-insp-w); column-gap: 0; align-items: start; justify-content: stretch;
+    max-width: none; padding: 0; min-height: 100vh;
+    background: linear-gradient(to right, var(--d-canvas) calc(100% - var(--d-insp-w) - 1px), var(--d-line) calc(100% - var(--d-insp-w) - 1px), var(--d-line) calc(100% - var(--d-insp-w)), #fff calc(100% - var(--d-insp-w)));
+  }
+  html.web body[data-phone] #app > * { grid-column: 2; margin-inline: 28px; }
+  html.web body[data-phone] #app > #banner:not([hidden]), html.web body[data-phone] #app > #strip { margin-top: 24px; }
+  html.web body[data-phone] #app > #phone {
+    grid-column: 1; grid-row: 1 / span 20; margin: 0; position: sticky; top: 0; height: 100vh; align-self: start;
+    display: flex; align-items: center; justify-content: center; padding: 32px 40px;
+  }
+  html.web body[data-phone] #phone .bcpf { width: min(440px, 100%, calc((100vh - 64px) * 0.62)); max-width: 440px; border: 0; border-radius: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 20px 48px rgba(0,0,0,.10); }
+  html.web body[data-phone] .tabs { top: 0; margin-inline: -28px; padding-inline: 16px; }
+  html.web body[data-phone] #sheet { padding-bottom: 180px; }
+  html.web body[data-phone] [role=tabpanel] { padding-top: 20px; }
+  html.web .decide-chip { border-radius: 12px; }
+  html.web .tabs [role=tab][aria-selected="true"] { border-bottom-color: var(--d-ink); }
+  html.web .tabs [role=tab][aria-selected="true"] .ico { color: var(--d-ink); }
+
+  /* 아래 독(말로 고치기·내보내기): 편집 칸 아래에 붙는다 */
+  html.web .dock {
+    left: auto; right: 0; width: var(--d-insp-w); padding: 12px 28px 16px !important; position: fixed; bottom: 0;
+    background: #fff; border-top: 1px solid var(--d-line); border-left: 1px solid var(--d-line);
+  }
+  html.web body[data-phone] .dock { padding-left: 28px !important; }
+  html.web .chat-form .input { border-radius: 9999px; }
+  html.web #chat-send { background: var(--d-ink); border-color: var(--d-ink); }
+  html.web #btn-export { min-height: 52px; }
+
+  /* 메뉴에 "새로 만들기"가 있으니 편집 칸 위의 같은 버튼은 숨긴다 */
+  html.web #btn-new { display: none; }
+  html.web .guide-band .btn { border: 0; background: transparent; border-radius: 10px; }
+  html.web .guide-band .btn:hover:not(:disabled) { background: var(--d-hover); }
+
+  /* 시트(내보내기·사용 방법·사진 바꾸기): 화면 가운데, 둥근 모서리만 맞춘다 */
+  html.web .sheet { border-radius: 20px; }
+}
+
+/* 1040~1279px: 메뉴·편집 칸을 조금 좁혀 가운데 미리보기 자리를 남긴다 */
+@media (min-width: 1040px) and (max-width: 1279px) {
+  html.web { --d-side-w: 216px; --d-insp-w: 420px; }
+  html.web body[data-phone] #app > #phone { padding: 24px; }
+  html.web body[data-phase="start"] #app { padding-inline: 32px; column-gap: 32px; }
+}

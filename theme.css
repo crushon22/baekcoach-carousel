@@ -579,3 +579,6 @@ h1, h2, h3, .hero-title, .guide-title, .guide-h, .qs-title, .brand-text, .h1-sub
 .imgtool-foot .btn-primary { flex-basis: 100%; }
 @media (min-width: 900px) { .imgtool-sheet { max-width: 620px; } }
 body.drop-over #stage { outline: 3px dashed var(--blue); outline-offset: -6px; border-radius: var(--r-sheet); background: var(--blue-soft); }
+
+/* PC 웹 사이드바 전용(desktop.css 가 보여 준다) */
+.nav-only, .nav-label { display: none; }

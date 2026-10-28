@@ -220,6 +220,7 @@ async function startNew({ keepNothing = false } = {}) {
   clearErrors();
   if (!keepNothing) { await loadProduct(); await loadStatus(); }
   render();
+  window.scrollTo(0, 0);
 }
 
 async function openOptions() {
@@ -275,6 +276,10 @@ async function boot() {
   document.getElementById('btn-settings').addEventListener('click', openOptions);
   document.getElementById('btn-guide').addEventListener('click', () => openGuide());
   document.getElementById('btn-history').addEventListener('click', openHistory);
+  document.getElementById('btn-nav-new').addEventListener('click', () => {
+    if (S.phase === 'start') { window.scrollTo({ top: 0 }); document.querySelector('#manual-title, #photo-title, #btn-photo-upload')?.focus(); return; }
+    startNew();
+  });
   document.getElementById('status-chip').addEventListener('click', () => { if (S.phase === 'ready') openTab('review', { scroll: true }); });
   document.querySelectorAll('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => openTab(b.dataset.tab)));
   el.overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOverlay(); });

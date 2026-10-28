@@ -9,16 +9,19 @@
   <link rel="stylesheet" href="sidepanel.css">
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="lib/phone-frame.css">
+  <link rel="stylesheet" href="desktop.css">
 </head>
 <body data-phase="loading">
   <header class="topbar" id="topbar">
     <h1 class="brand"><span id="brand-logo"></span><span class="brand-text">백코치 <span class="h1-sub">캐러셀</span></span></h1>
     <button type="button" id="status-chip" class="status-chip" hidden></button>
     <div class="topbar-actions">
+      <button type="button" id="btn-nav-new" class="btn nav-only" aria-label="새로 만들기" data-icon="plus"><span class="nav-label">새로 만들기</span></button>
       <button type="button" id="btn-guide" class="btn help-btn" aria-label="사용 방법" title="사용 방법" data-icon="help"><span class="help-label">사용 방법</span></button>
-      <button type="button" id="btn-history" class="btn icon-btn" aria-label="지난 작업" title="지난 작업" data-icon="clock"></button>
-      <button type="button" id="btn-settings" class="btn icon-btn" aria-label="설정" title="설정" data-icon="gear"></button>
+      <button type="button" id="btn-history" class="btn icon-btn" aria-label="지난 작업" title="지난 작업" data-icon="clock"><span class="nav-label">지난 작업</span></button>
+      <button type="button" id="btn-settings" class="btn icon-btn" aria-label="설정" title="설정" data-icon="gear"><span class="nav-label">설정</span></button>
     </div>
+    <p class="nav-only nav-foot">내 Gemini 키로 동작하고, 입력한 내용은 이 브라우저에만 남아요.</p>
   </header>
 
   <div id="alerts" aria-live="assertive"></div>
