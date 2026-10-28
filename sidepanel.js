@@ -10,6 +10,7 @@ import { PURPOSES } from './lib/ai-util.js';
 import { COUNT_OPTIONS } from './ui/labels.js';
 import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey } from './ui/start.js';
 import { renderAiStatus } from './ui/aistatus.js';
+import { autoIdentify } from './ui/identify.js';
 import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate } from './ui/photo.js';
 import { decorateIcons, logoMark, icon } from './ui/icons.js';
 import { renderPreview, schedulePreview } from './ui/preview.js';
@@ -77,9 +78,9 @@ function renderDecision() {
 function renderDecisionPhoto(p, locked) {
   const n = p.carousel.cards.length;
   const style = p.carousel.overlayStyle || 'outline';
-  const kids = [h('div', { class: 'decide-row', role: 'group', 'aria-label': '사진 캐러셀 설정' },
-    h('div', { class: 'decide-chip static', 'data-kind': 'mode' }, h('span', { class: 'chip-k' }, '버전'), h('span', { class: 'chip-v' }, '사진 캐러셀')),
-    h('div', { class: 'decide-chip static', 'data-kind': 'count' }, h('span', { class: 'chip-k' }, '장수'), h('span', { class: 'chip-v' }, `${n}장`)),
+  // 버전·장수는 바꿀 수 없는 정보라 작은 한 줄로, 바꿀 수 있는 스타일만 칩으로 크게(2026-10-28 사용자 의견: "같은 크기면 안 예뻐요")
+  const kids = [h('div', { class: 'decide-row decide-photo', role: 'group', 'aria-label': '사진 캐러셀 설정' },
+    h('p', { class: 'decide-meta', id: 'decide-meta' }, h('span', { 'data-kind': 'mode' }, '사진 캐러셀'), h('span', { class: 'decide-sep', 'aria-hidden': 'true' }, '·'), h('span', { 'data-kind': 'count' }, `${n}장`)),
     h('button', { type: 'button', class: 'decide-chip', 'data-kind': 'style', 'aria-expanded': String(S.picker === 'style'), disabled: locked, onclick: () => { S.picker = S.picker === 'style' ? null : 'style'; renderDecision(); } },
       h('span', { class: 'chip-k' }, '스타일'), h('span', { class: 'chip-v' }, STYLE_LABEL[style] || style)))];
   if (S.picker === 'style' && !locked) {
@@ -190,10 +191,14 @@ async function onMake(kind) {
   if (!hasKey()) { renderStage(); document.getElementById('nokey')?.scrollIntoView({ block: 'center' }); return; }
   if (S.mode === 'photo') {
     if (S.photos.length < MIN_PHOTOS) { toast(`사진을 ${MIN_PHOTOS}장 이상 올려 주세요.`, { kind: 'warn' }); return; }
+    // 이름이 비어 있으면 사진으로 한 번 알아본다(모르면 사진만 보고 쓴다)
+    if (!(S.manual.title || '').trim() && !(!IS_WEB && S.rec?.product)) await autoIdentify(S.photos);
     const pp = buildProduct();
     await startGenerate(pp, { link: S.link || '', options: { mode: 'photo', overlayStyle: S.photoStyle, adLabel: adCfg('photo').on } });
     return;
   }
+  // 웹 상품 칸: 이름 없이 사진만 있으면 사진으로 이름을 알아본다
+  if (IS_WEB && S.webKind !== 'topic' && !(S.manual.title || '').trim() && S.manual.imageIds?.length) await autoIdentify(S.manual.imageIds);
   const product = buildProduct(IS_WEB ? S.webKind : undefined);
   if (!product) { toast(IS_WEB && S.webKind === 'topic' ? '주제를 먼저 적어 주세요.' : '상품 이름이나 주제를 먼저 적어 주세요.', { kind: 'warn' }); document.getElementById(IS_WEB && S.webKind === 'topic' ? 'topic-text' : 'manual-title')?.focus(); return; }
   await startGenerate(product, { link: S.link || '' });
@@ -216,7 +221,7 @@ async function startNew({ keepNothing = false } = {}) {
   S.project = null; S.phase = 'start'; S.progress = null; S.chat = [];
   S.newProductBanner = null; S.picker = null; S.sel = null; S.link = ''; S.searchResults = null;
   S.manual = { title: '', price: '', imageId: null, imageIds: [], desc: '' };
-  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = [];
+  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; S.identifyNote = '';
   unmountPf();
   closeOverlay();
   clearErrors();

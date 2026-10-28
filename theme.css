@@ -228,12 +228,23 @@ main { gap: 24px; }
 .input::placeholder { color: #94A3B8; }
 .thumb, .thumb-btn { border-radius: var(--r-input); background: var(--track); }
 .thumb-btn[aria-pressed="true"] { border-color: var(--blue); }
+/* AI 로 바꾼 사진·원본 표시(글자는 CSS 로만 — 작은 배지) */
+.thumb-btn, .photo-thumb { position: relative; }
+.thumb-btn[data-kind]::after, .photo-thumb[data-kind="ai"]::after { position: absolute; left: 4px; bottom: 4px; padding: 0 6px; border-radius: 6px; background: rgba(15, 23, 42, .72); color: #fff; font-size: 12px; line-height: 18px; font-weight: 600; pointer-events: none; }
+.thumb-btn[data-kind="ai"]::after, .photo-thumb[data-kind="ai"]::after { content: "AI"; }
+.thumb-btn[data-kind="original"]::after { content: "원본"; }
 .thumb-empty { color: var(--sub); }
 .chip, .tag { min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--body); font-weight: 500; box-shadow: none; transition: background .12s; }
 .chip:hover { background: var(--zone); }
 .chip:active { transform: none; box-shadow: none; }
 .chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--blue-dark); font-weight: 700; box-shadow: none; }
-.chip.word[aria-pressed="true"] { background: #FEF08A; border-color: #FACC15; color: var(--ink); }
+.chip.word[aria-pressed="true"] { background: color-mix(in srgb, var(--hl, #FFE14D) 38%, #fff); border-color: var(--hl, #FACC15); color: var(--ink); }
+/* 강조 색 견본: 점 + 이름 알약 */
+.hl-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.hl-swatch { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px 0 10px; border: 1px solid var(--line); border-radius: 9999px; background: #fff; color: var(--body); cursor: pointer; }
+.hl-swatch:hover { background: var(--zone); }
+.hl-swatch[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); color: var(--ink); }
+.hl-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12); }
 .option, .style-btn, .result-btn, .cover-btn { border: 1px solid var(--line); border-radius: var(--r-input); background: #fff; box-shadow: none; }
 .option[aria-pressed="true"], .style-btn[aria-pressed="true"] { border-color: var(--blue); background: var(--blue-soft); }
 .picker { background: var(--zone); border: 1px solid var(--line); border-radius: var(--r-input); }
@@ -586,3 +597,19 @@ body.drop-over #stage { outline: 3px dashed var(--blue); outline-offset: -6px; b
 .recreate-row .btn { color: var(--blue-dark); }
 .recreate-row .recreate-stop { color: inherit; }
 .photo-actions .btn, .recreate-row .btn { gap: 6px; }
+
+/* 말로 고치기 예시: 기본(확장·휴대폰 폭)은 숨기고 PC 화면에서만 작은 알약으로 보인다(desktop.css) */
+.chat-hints { display: none; }
+
+/* 사진 캐러셀 결정 띠: [사진 캐러셀 · 3장] 작은 한 줄 + 스타일 칩 */
+.decide-row.decide-photo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.decide-meta { margin: 0; display: inline-flex; align-items: center; gap: 6px; color: var(--sub); }
+.decide-photo .decide-chip { flex: 0 1 auto; min-width: 140px; }
+
+/* 사진 보고 이름 찾기: 이름 칸 바로 아래 작은 버튼 + 결과 한 줄 */
+.identify-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: -4px; }
+.identify-row .btn { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 0 14px; border: 1px solid var(--line); border-radius: 9999px; background: #fff; color: var(--body); text-decoration: none; }
+.identify-row .btn:hover:not(:disabled) { background: var(--zone); }
+.identify-row .btn .ico { color: var(--blue); }
+.identify-note { margin: 0; flex: 1 1 200px; }
+.identify-note:empty { display: none; }

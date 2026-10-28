@@ -18,6 +18,9 @@ import { colorBlock, adBlock, afterDesignRender } from './designblocks.js';
 import { openImageTool } from './imagetools.js';
 
 const POS = { top: '위', middle: '가운데', bottom: '아래' };
+/** 강조 단어 색: 사진 위에서 잘 보이는 밝은 색 7가지(흰 글씨·검은 테두리와 함께 써도 또렷한 것) */
+export const HL_COLORS = [['#FFE14D', '노랑'], ['#FFA53D', '주황'], ['#FF6B9A', '분홍'], ['#FF5A5A', '빨강'], ['#3DDCB0', '민트'], ['#5CC8FF', '하늘'], ['#B38CFF', '보라']];
+const HL_DEFAULT = '#FFE14D';
 const SIZE = { xl: '크게', l: '보통', m: '작게' };
 const ui = { rewrite: null, covers: null, busy: '', draft: null, draftFor: -1 };
 let rules = null;
@@ -63,7 +66,8 @@ export async function renderPhotoEdit(host) {
   const lim = limitFor(i);
   if (ui.draftFor !== i || !ui.draft) { ui.draft = (ov.lines && ov.lines.length ? ov.lines : ['']).slice(0, 3); ui.draftFor = i; }
 
-  const wordsBox = h('div', { id: 'word-box' });
+  const hlColor = p.carousel.overlayColors?.highlight || HL_DEFAULT;
+  const wordsBox = h('div', { id: 'word-box', style: `--hl:${hlColor}` });
   function renderWords() {
     const o = overlayOf(card);
     const hl = new Set(o.highlight || []);
@@ -74,10 +78,7 @@ export async function renderPhotoEdit(host) {
     const o = overlayOf(card);
     const set = [...(o.highlight || [])];
     const at = set.indexOf(w);
-    const max = rules?.maxHighlight || 2;
-    if (at >= 0) set.splice(at, 1);
-    else if (set.length >= max) { toast(`강조는 한 장에 ${max}단어까지예요. 먼저 켜 둔 단어를 눌러 끄세요.`, { kind: 'warn' }); return; }
-    else set.push(w);
+    if (at >= 0) set.splice(at, 1); else set.push(w);   // 개수 제한 없음(원하는 만큼)
     if (set.length) o.highlight = set; else delete o.highlight;
     refreshCard(i); scheduleSave(); scheduleReview(); renderWords();
   }
@@ -137,8 +138,13 @@ export async function renderPhotoEdit(host) {
       ui.draft.length < 3 ? h('button', { type: 'button', class: 'btn btn-block', id: 'btn-line-add', onclick: () => { ui.draft.push(''); renderPhotoEdit(host).then(() => document.getElementById(`line-${ui.draft.length - 1}`)?.focus()); } }, '줄 추가') : null),
 
     fold({ id: 'highlight-group', icon: 'pen', title: '강조 단어', open: false },
-      h('p', { class: 'muted small' }, `단어를 누르면 노란색으로 강조돼요 (한 장에 ${rules?.maxHighlight || 2}개까지).`),
-      wordsBox),
+      h('p', { class: 'muted small' }, '단어를 누르면 강조돼요. 여러 개 골라도 돼요.'),
+      wordsBox,
+      h('div', { class: 'label' }, '강조 색'),
+      h('div', { class: 'hl-swatches', id: 'hl-colors', role: 'group', 'aria-label': '강조 색' },
+        ...HL_COLORS.map(([hex, name]) => h('button', { type: 'button', class: 'hl-swatch', 'data-color': hex, 'aria-pressed': String(hlColor.toUpperCase() === hex), 'aria-label': `강조 ${name}`, title: name, style: `--c:${hex}`, onclick: () => setHighlightColor(hex, host) },
+          h('span', { class: 'hl-dot' }), h('span', { class: 'hl-name' }, name)))),
+      h('p', { class: 'muted small' }, '강조 색은 모든 카드에 같이 적용돼요. 말로도 돼요: "강조 분홍으로", \'끝\' 강조해 줘')),
 
     fold({ id: 'placement-group', icon: 'text', title: '글 위치·크기', open: false },
       segment({ id: 'overlay-position', label: '글 위치', value: ov.position, onPick: (v) => setOv({ position: v }),
@@ -181,16 +187,36 @@ export async function renderPhotoEdit(host) {
   afterDesignRender(host);
 }
 
+function setHighlightColor(hex, host) {
+  const c = S.project.carousel;
+  c.overlayColors = { ...(c.overlayColors || {}), highlight: hex };
+  refreshAll(); scheduleSave(); renderPhotoEdit(host);
+}
+
 // ── 사진 ──
+/** AI 로 바꾼 사진 → 원본 id (프로젝트에 남긴 것 + 이번 창에서 바꾼 것) */
+const originalOf = (id) => S.project.originals?.[id] || S.genFrom?.get(id) || null;
+const isGenerated = (id) => !!originalOf(id) || S.genImages?.has(id) || cards().some((c) => c?.imageId === id && c.imageIsGenerated);
+
 function photoPicker(card, host) {
-  const ids = [...new Set([...(S.project.input?.imageIds || []), ...cards().map((c) => c?.imageId).filter(Boolean)])];
+  const base = [...(S.project.input?.imageIds || []), ...cards().map((c) => c?.imageId).filter(Boolean)];
+  // AI 로 바꾼 사진 바로 뒤에 그 원본을, 원본 뒤에는 그 원본으로 만든 AI 사진들을 둔다 — 원본·AI 사진을 언제든 오간다
+  const pairs = [...Object.entries(S.project.originals || {}), ...(S.genFrom ? [...S.genFrom.entries()] : [])];
+  const altsOf = (id) => pairs.filter(([, o]) => o === id).map(([g]) => g);
+  const ids = [...new Set(base.flatMap((id) => [id, originalOf(id), ...altsOf(originalOf(id) || id)].filter(Boolean)))];
   const row = h('div', { class: 'thumbs', id: 'photo-thumbs' });
   ids.forEach((id) => {
-    const b = h('button', { type: 'button', class: 'thumb-btn', 'aria-pressed': String(card.imageId === id), 'aria-label': '이 사진 쓰기', onclick: () => { const gen = S.genImages?.has(id) || cards().some((c) => c?.imageId === id && c.imageIsGenerated); card.imageId = id; if (gen) card.imageIsGenerated = true; else delete card.imageIsGenerated; refreshCard(S.cardIndex); scheduleSave(); renderPhotoEdit(host); } }, h('span', { class: 'thumb-empty' }, '…'));
-    imageUrl(id).then((u) => { if (u) b.replaceChildren(h('img', { src: u, alt: '' })); });
+    const gen = isGenerated(id);
+    // "원본" 배지는 그 사진으로 만든 AI 사진이 있을 때만(바꾼 적 없는 사진에는 배지 없음)
+    const kind = gen ? 'ai' : altsOf(id).length ? 'original' : null;
+    const b = h('button', { type: 'button', class: 'thumb-btn', 'data-id': id, 'data-kind': kind, 'aria-pressed': String(card.imageId === id), 'aria-label': gen ? 'AI로 바꾼 사진 쓰기' : '원본 사진 쓰기', onclick: () => { card.imageId = id; if (gen) card.imageIsGenerated = true; else delete card.imageIsGenerated; refreshCard(S.cardIndex); scheduleSave(); renderPhotoEdit(host); } }, h('span', { class: 'thumb-empty' }, '…'));
+    imageUrl(id).then((u) => { if (u) b.replaceChildren(h('img', { src: u, alt: '' })); }); // AI·원본 표시는 CSS(data-kind)
     row.append(b);
   });
-  return h('div', null, row, h('p', { class: 'muted small' }, '올린 사진 중에서 바꾸거나, 아래 버튼으로 새 사진을 올려요. 글은 그대로예요.'));
+  const orig = card.imageId && originalOf(card.imageId);
+  return h('div', null, row,
+    orig ? h('button', { type: 'button', class: 'btn btn-block', id: 'btn-photo-original', onclick: () => { card.imageId = orig; delete card.imageIsGenerated; refreshCard(S.cardIndex); scheduleSave(); renderPhotoEdit(host); } }, '원본 사진으로 되돌리기') : null,
+    h('p', { class: 'muted small' }, pairs.length ? 'AI로 바꿔도 원본은 그대로 남아요. 원본·AI 사진 중 골라 쓰세요. 글은 그대로예요.' : '올린 사진 중에서 바꾸거나, 아래 버튼으로 새 사진을 올려요. 글은 그대로예요.'));
 }
 
 async function replacePhoto(host) {
@@ -210,7 +236,13 @@ function transformPhoto(host) {
   const i = S.cardIndex;
   const c = cur();
   openImageTool({ imageId: c?.imageId, aspect: '4:5', productTitle: S.project.input?.title, projectId: S.project.id || undefined,
-    onUse: (id) => { const card = cards()[i]; if (!card) return; card.imageId = id; card.imageIsGenerated = true; S.genImages.add(id); refreshCard(i); scheduleSave(); if (i === S.cardIndex) renderPhotoEdit(host); } });
+    onUse: (id) => {
+      const card = cards()[i]; if (!card) return;
+      // 원본을 기억해 두고(원본의 원본이면 그쪽) 바꾼 사진을 쓴다 — 사진 고르기에서 원본으로 언제든 되돌린다
+      const from = card.imageId;
+      if (from) S.project.originals = { ...(S.project.originals || {}), [id]: originalOf(from) || from };
+      card.imageId = id; card.imageIsGenerated = true; S.genImages.add(id); refreshCard(i); scheduleSave(); if (i === S.cardIndex) renderPhotoEdit(host);
+    } });
 }
 
 // ── 다시 쓰기 3안 ──

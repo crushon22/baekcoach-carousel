@@ -11,6 +11,7 @@ import { icon } from './icons.js';
 import { fontDetails, pickStartFont } from './fontpick.js';
 import { adPanel, adCfg, adFields } from './adlabel.js';
 import { openImageTool } from './imagetools.js';
+import { identifyRow } from './identify.js';
 import { TRANSFORMS } from '../lib/imageprompt.js';
 
 export const STYLES = [
@@ -110,7 +111,7 @@ export function photoStrip(list, { key, listId, uploadId, firstLabel = '커버',
   const sel = S.photoSel[key] ?? null;
   const ul = h('ul', { class: 'photo-list', id: listId });
   list.forEach((id, i) => {
-    const b = h('button', { type: 'button', class: 'photo-thumb', 'aria-pressed': String(sel === i), 'aria-label': `${i + 1}번 사진 ${sel === i ? '선택 해제' : '선택'}`, onclick: () => { S.photoSel[key] = sel === i ? null : i; fn.renderStage(); } },
+    const b = h('button', { type: 'button', class: 'photo-thumb', 'data-kind': S.genImages?.has(id) ? 'ai' : null, 'aria-pressed': String(sel === i), 'aria-label': `${i + 1}번 사진 ${sel === i ? '선택 해제' : '선택'}`, onclick: () => { S.photoSel[key] = sel === i ? null : i; fn.renderStage(); } },
       h('span', { class: 'thumb-empty' }, '…'));
     imageUrl(id).then((u) => { if (u) b.replaceChildren(h('img', { src: u, alt: '' })); });
     ul.append(h('li', { class: 'photo-item web-photo', 'data-i': i, 'data-id': id }, b, h('span', { class: 'photo-no web-photo-tag' }, i === 0 ? firstLabel : String(i + 1))));
@@ -129,7 +130,9 @@ export function photoStrip(list, { key, listId, uploadId, firstLabel = '커버',
     h('button', { type: 'button', class: 'btn', 'data-act': 'up', disabled: sel === 0, onclick: () => move(list, sel, -1, key) }, icon('arrowLeft', { size: 18 }), '앞으로'),
     h('button', { type: 'button', class: 'btn', 'data-act': 'down', disabled: sel === list.length - 1, onclick: () => move(list, sel, 1, key) }, '뒤로', icon('arrowRight', { size: 18 })),
     h('button', { type: 'button', class: 'btn', 'data-act': 'remove', onclick: () => { list.splice(sel, 1); S.photoSel[key] = null; fn.renderStage(); } }, '빼기'),
-    h('button', { type: 'button', class: 'btn', 'data-act': 'transform', onclick: () => transformListPhoto(list, sel) }, icon('sparkle', { size: 18 }), 'AI로 바꾸기')) : null;
+    h('button', { type: 'button', class: 'btn', 'data-act': 'transform', onclick: () => transformListPhoto(list, sel) }, icon('sparkle', { size: 18 }), 'AI로 바꾸기'),
+    // AI 로 바꾼 사진이면 원본으로 되돌리기(원본은 지우지 않고 남겨 둔다)
+    S.genFrom?.has(list[sel]) ? h('button', { type: 'button', class: 'btn', 'data-act': 'original', onclick: () => { list[sel] = S.genFrom.get(list[sel]); fn.renderStage(); } }, '원본으로') : null) : null;
   return h('div', { class: 'photo-strip' }, row, actions, recreate);
 }
 
@@ -268,6 +271,7 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
   kids.push(h('section', { class: 'field-block', id: 'photo-start' },
     pageProduct ? null : h('label', { class: 'label', for: 'photo-title' }, '상품 이름 (선택)'),
     pageProduct ? null : title,
+    pageProduct ? null : identifyRow({ ids: S.photos, inputId: 'photo-title' }),
     h('div', { class: 'label label-row' }, h('span', null, '사진'), h('span', { class: 'muted small', id: 'photo-count' }, `${n}장 · 2~${MAX_PHOTOS}장`)),
     photoStrip(S.photos, { key: 'photo', listId: 'photo-list', uploadId: 'btn-photo-upload', firstLabel: '커버', onAdd: uploadPhotos }),
     h('p', { class: 'muted small', id: 'photo-drop-hint' }, '사진을 끌어다 놓거나 붙여 넣기(Ctrl+V · ⌘V)로도 넣을 수 있어요. 사진을 누르면 AI로 바꿀 수 있어요.'),

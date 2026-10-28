@@ -10,6 +10,7 @@ import { showError } from './errors.js';
 import { modeTabs, renderPhotoStart, buildPhotoProduct, fontCard, photoStrip } from './photo.js';
 import { icon } from './icons.js';
 import { adPanel, adCfg } from './adlabel.js';
+import { identifyRow } from './identify.js';
 
 const hasKey = () => !!(S.settings?.has?.[store.aiKeyName(S.settings)] || S.settings?.devMockAI);
 
@@ -414,6 +415,7 @@ function renderWebStart(kids) {
   kids.push(h('section', { class: 'field-block', id: 'web-form' },
     h('div', { class: 'form' },
       h('label', { class: 'label', for: 'manual-title' }, '상품 이름'), title,
+      identifyRow({ ids: S.manual.imageIds, inputId: 'manual-title' }),
       photoBlock(S.manual.imageIds, { label: '상품 사진 (선택)' }))),
   h('section', { class: 'extra', id: 'web-extra' },
     h('div', { class: 'form' },

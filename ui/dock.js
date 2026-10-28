@@ -18,6 +18,19 @@ export function renderChatLog() {
   log.scrollTop = log.scrollHeight;
 }
 
+/** 입력칸 위 "이렇게 말해 보세요" 짧은 예시(누르면 그대로 보낸다). PC 화면에서만 보인다(CSS). */
+const HINTS = {
+  photo: ['글씨 더 크게', '강조 분홍으로', '2번 글 위로', '띠 스타일로'],
+  cardnews: ['3번 짧게', '베이지로', '강조 빨강', '훅 2번으로'],
+};
+export function renderChatHints() {
+  const box = document.getElementById('chat-hints');
+  if (!box) return;
+  const list = S.project ? HINTS[S.project.carousel?.mode === 'photo' ? 'photo' : 'cardnews'] : [];
+  box.hidden = !list.length;
+  setChildren(box, ...list.map((t) => h('button', { type: 'button', class: 'chat-hint', 'data-hint': t, onclick: () => { const inp = document.getElementById('chat-input'); if (!inp || busy) return; inp.value = t; send(); } }, t)));
+}
+
 function push(role, text) {
   S.chat.push({ role, text, at: Date.now() });
   renderChatLog();
@@ -56,6 +69,7 @@ function setBusy(b) {
   const input = document.getElementById('chat-input');
   const btn = document.getElementById('chat-send');
   if (input) input.disabled = b;
+  document.querySelectorAll('.chat-hint').forEach((x) => { x.disabled = b; });
   if (btn) { btn.disabled = b; const l = btn.querySelector('.lbl'); if (l) l.textContent = b ? '처리 중' : '보내기'; }
 }
 
@@ -98,7 +112,7 @@ export function initDock() {
 export function showDock(show) {
   el.dock.hidden = !show;
   document.body.classList.toggle('has-dock', !!show);
-  if (show) renderChatLog();
+  if (show) { renderChatLog(); renderChatHints(); }
 }
 
 /** 열린 작업의 대화를 불러온다 */

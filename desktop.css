@@ -139,6 +139,28 @@
   html.web .tabs [role=tab][aria-selected="true"] { border-bottom-color: var(--d-ink); }
   html.web .tabs [role=tab][aria-selected="true"] .ico { color: var(--d-ink); }
 
+  /* ── 오른쪽 편집 칸 글씨 위계 (2026-10-28 사용자 요청: 중요한 건 크게, 없어도 되는 건 작게) ──
+     접기 줄 제목 16/600 · 탭 15 · 값·버튼 14~15/500 · 라벨 14/500 · 도움말·글자 수·안내 13/400 · 칩 머리말 12.
+     입력칸 글씨는 16 그대로(타자 편하게). 마우스로 쓰는 PC 화면이라 버튼은 36px(대화 예시는 30px)까지 낮춘다. */
+  html.web body[data-phone] #app :is(.muted.small, .small.muted, .hint, .count, .notices li, #line-limit, .warn-line.small, .card-nav-title .small) { font-size: 13px; line-height: 1.5; }
+  html.web body[data-phone] #app .label { font-size: 14px; color: var(--d-body); }
+  html.web body[data-phone] #app .fold > summary { font-size: 16px; min-height: 48px; }
+  html.web body[data-phone] #app :is(.chip, .hl-swatch, .btn:not(.btn-big):not(.btn-primary), .option) { font-size: 14px; min-height: 36px; }
+  html.web body[data-phone] #app .chip { padding-inline: 14px; }
+  html.web body[data-phone] .tabs [role=tab] { font-size: 15px; }
+  html.web body[data-phone] .card-nav-title strong { font-size: 15px; }
+  html.web .decide-chip { min-height: 52px; padding: 6px 12px; }
+  html.web .decide-chip .chip-k { font-size: 12px; }
+  html.web .decide-chip .chip-v { font-size: 15px; font-weight: 500 !important; }
+  html.web .decide-meta { font-size: 13px; }
+  html.web .decide-photo .decide-chip { flex-direction: row; align-items: center; gap: 8px; min-height: 40px; min-width: 0; padding: 0 14px; border-top-width: 1px; }
+  html.web .decide-photo .decide-chip .chip-k { color: var(--d-sub); }
+
+  /* 말로 고치기 예시: 입력칸 위 작은 알약(누르면 그대로 보낸다) */
+  html.web .chat-hints:not([hidden]) { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  html.web .chat-hint { min-height: 30px; padding: 0 12px; border: 1px solid var(--d-line); border-radius: 9999px; background: #fff; color: var(--d-body); font: inherit; font-size: 13px; cursor: pointer; }
+  html.web .chat-hint:hover:not(:disabled) { background: var(--d-hover); color: var(--d-ink); }
+
   /* 아래 독(말로 고치기·내보내기): 편집 칸 아래에 붙는다 */
   html.web .dock {
     left: auto; right: 0; width: var(--d-insp-w); padding: 12px 28px 16px !important; position: fixed; bottom: 0;

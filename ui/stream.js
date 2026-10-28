@@ -92,6 +92,11 @@ function markGenerated(card) {
 function finishWith(done, prev, { fresh = false } = {}) {
   const project = done;
   (project.carousel?.cards || []).forEach(markGenerated);
+  // AI 로 바꾼 사진의 원본을 프로젝트에 남긴다(카드 사진 고르기에서 원본으로 되돌릴 수 있게). {AI사진 id: 원본 id}
+  const ids = [...(project.input?.imageIds || []), ...(project.carousel?.cards || []).map((c) => c?.imageId)].filter(Boolean);
+  const originals = { ...(prev.originals || {}) };
+  for (const id of ids) if (S.genFrom?.has(id)) originals[id] = S.genFrom.get(id);
+  if (Object.keys(originals).length) project.originals = originals;
   // 패널이 따로 들고 있던 값 보존
   // 처음 만들 때는 패널이 아는 링크(검색 결과의 수수료 링크)를, 다시 만들 때는 ai.regenerate 가 유지해 돌려준 link 를 쓴다
   project.link = fresh ? (prev.link || '') : (done.link || '');
