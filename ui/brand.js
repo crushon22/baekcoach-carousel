@@ -1,8 +1,8 @@
-// 백코치 캐러셀 로고(2026-10-28 새로 만듦 — 쇼츠비서 고리와 다르게, 캐러셀 "카드 겹침" 모양 + 보라 파랑).
+// 백코치 캐러셀 로고(2026-10-28 새로 만듦 — 쇼츠비서 고리와 다르게, 캐러셀 "카드 겹침" 모양 + 하늘 파랑, 사용자 선택 A·하늘).
 // 모양·색을 바꾸려면 이 파일만 고치고 `npm run icons` 로 확장 아이콘 PNG 를 다시 만든다.
 // DOM 없이 SVG 문자열만 만든다(앱바·설정·아이콘 생성 스크립트가 같이 쓴다). xmlns 는 쓰지 않는다(HTML 안 인라인 SVG).
-export const BRAND_FROM = '#3B82F6'; // 파랑
-export const BRAND_TO = '#8B5CF6';   // 보라
+export const BRAND_FROM = '#22D3EE'; // 하늘
+export const BRAND_TO = '#3B82F6';   // 파랑
 const SPARK = '#FFE14D';
 
 let seq = 0;

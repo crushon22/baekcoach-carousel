@@ -41,7 +41,7 @@ export function icon(name, { size = 22, cls = '' } = {}) {
   return t.content.firstElementChild;
 }
 
-/** 앱바 로고 마크 — 모양·색은 ui/brand.js(카드 겹침, 보라 파랑) */
+/** 앱바 로고 마크 — 모양·색은 ui/brand.js(카드 겹침, 하늘 파랑) */
 export function logoMark(size = 30) {
   const t = document.createElement('template');
   t.innerHTML = logoSvg(size);
