@@ -99,6 +99,8 @@ const PROVIDERS = {
   },
 };
 const providerOf = () => (settings.aiProvider === 'openai' ? 'openai' : 'gemini');
+/** 고르기 버튼 아래 작은 상태: 키 없음 · 키 저장됨(확인 전) · 연결됨 · 연결 안 됨 */
+const providerState = (k) => (!settings.has?.[PROVIDERS[k].field] ? '키 없음' : settings.aiCheck?.[k]?.ok ? '연결됨' : settings.aiCheck?.[k] ? '연결 안 됨' : '키 저장됨');
 
 function renderGemini() {
   const host = $id('gemini-section');
@@ -114,6 +116,8 @@ function renderGemini() {
   saveBtn.addEventListener('click', async () => {
     const v = input.value.trim();
     if (!v) { setChildren(result, h('p', { class: 'status bad' }, '키를 먼저 붙여넣어 주세요.')); return; }
+    const why = store.keyProblem(P.field, v);
+    if (why) { setChildren(result, h('p', { class: 'status bad', id: 'key-shape' }, why)); return; }
     try {
       await save({ [P.field]: v });
       input.value = '';
@@ -129,6 +133,8 @@ function renderGemini() {
   checkBtn.addEventListener('click', async () => {
     const typed = input.value.trim();
     if (!typed && !has) { setChildren(result, h('p', { class: 'status bad' }, '먼저 키를 붙여넣고 확인해 주세요.')); return; }
+    const why = store.keyProblem(P.field, typed);
+    if (why) { setChildren(result, h('p', { class: 'status bad', id: 'key-shape' }, why)); return; }
     checkBtn.disabled = true; checkBtn.textContent = '확인하는 중…';
     setChildren(result);
     try {
@@ -145,6 +151,8 @@ function renderGemini() {
       setChildren(result, errorBox(normalizeError(e), { title: '연결하지 못했어요' }));
     }
     checkBtn.disabled = false; checkBtn.textContent = '키 연결 확인';
+    // 확인 결과가 저장됐으니 고르기 버튼의 상태 글자만 새로 고친다(결과 상자는 그대로)
+    try { settings = await request('core.getSettings'); for (const k of Object.keys(PROVIDERS)) { const st = document.querySelector(`[data-provider="${k}"] .provider-state`); if (st) st.textContent = providerState(k); } } catch { /* 다음에 다시 */ }
   });
 
   // 어떤 AI 로 만들지: 고르면 바로 저장. 다른 쪽 키는 지우지 않는다(다시 바꾸면 그대로 쓴다)
@@ -154,7 +162,7 @@ function renderGemini() {
   };
   const seg = h('div', { class: 'provider-seg', id: 'ai-provider', role: 'group', 'aria-label': '사용할 AI' },
     ...Object.entries(PROVIDERS).map(([k, x]) => h('button', { type: 'button', class: 'provider-btn', 'data-provider': k, 'aria-pressed': String(pv === k), onclick: () => pick(k) },
-      h('span', { class: 'provider-name' }, x.name), h('span', { class: 'provider-state' }, settings.has?.[x.field] ? '키 저장됨' : '키 없음'))));
+      h('span', { class: 'provider-name' }, x.name), h('span', { class: 'provider-state' }, providerState(k)))));
 
   setChildren(host,
     h('div', { class: 'field-head' }, h('h2', { id: 'gemini-h' }, icon('key', { size: 22 }), 'AI 키 (필수)'), h('span', { id: `${P.id}-state` }, badge(has))),

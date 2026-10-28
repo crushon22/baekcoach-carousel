@@ -60,10 +60,22 @@
   html.web body[data-phase="start"] #btn-nav-new { background: #fff; color: var(--d-ink) !important; border: 1px solid var(--d-line); }
   html.web body[data-phase="start"] #btn-nav-new .ico { color: var(--d-ink); }
   html.web body[data-phase="start"] #btn-nav-new:hover:not(:disabled) { background: var(--d-hover); color: var(--d-ink) !important; }
-  /* 메뉴 아래 안내: 사용자가 "더 작은 글씨로 쉽고 자세하게"를 원해 13px(이곳만 16px 기준 예외, 2026-10-28) */
-  html.web .nav-foot { display: flex; flex-direction: column; gap: 10px; margin: 12px 4px 0; padding: 12px 4px 0; border-top: 1px solid var(--d-line); font-size: 13px; line-height: 1.55; color: var(--d-sub); word-break: keep-all; }
-  html.web .nav-foot p { margin: 0; }
-  html.web .nav-foot strong { display: block; margin-bottom: 2px; color: var(--d-body); font-size: 13px; }
+  /* 메뉴 아래 "연결된 AI": Gemini·GPT 상태, 키가 있는 쪽을 눌러 고른다. 작은 글씨(13~14px)는 이곳만 16px 기준 예외(2026-10-28 사용자 요청) */
+  html.web .nav-foot { display: flex; flex-direction: column; gap: 4px; margin: 12px 0 0; padding: 12px 0 0; border-top: 1px solid var(--d-line); font-size: 13px; line-height: 1.5; color: var(--d-sub); word-break: keep-all; }
+  html.web .nav-ai-head { margin: 0 12px 2px; font-size: 13px; color: var(--d-sub); }
+  html.web .nav-ai-rows { display: flex; flex-direction: column; gap: 2px; }
+  html.web .nav-ai-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid transparent; border-radius: 10px; background: transparent; font: inherit; font-size: 14px; color: var(--d-body); text-align: left; }
+  html.web button.nav-ai-row { cursor: pointer; }
+  html.web button.nav-ai-row:hover { background: var(--d-hover); }
+  html.web .nav-ai-row[aria-pressed="true"], html.web .nav-ai-row[aria-current="true"] { background: #fff; border-color: var(--d-line); color: var(--d-ink); cursor: default; }
+  html.web .nav-ai-row.is-off { color: #A1A1AA; }
+  html.web .nav-ai-name { font-weight: 500; }
+  html.web .nav-ai-state { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--d-sub); white-space: nowrap; }
+  html.web .nav-ai-state::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #D4D4D8; }
+  html.web .nav-ai-state.ok::before { background: #16A34A; }
+  html.web .nav-ai-state.wait::before { background: #F59E0B; }
+  html.web .nav-ai-state.bad::before { background: #DC2626; }
+  html.web .nav-ai-note { margin: 4px 12px 0; font-size: 13px; color: var(--d-sub); overflow-wrap: anywhere; }
 
   /* 메뉴 옆 작업 영역 */
   html.web #alerts, html.web main#app { margin-left: var(--d-side-w); }

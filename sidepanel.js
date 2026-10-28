@@ -9,6 +9,7 @@ import { TYPE_LABELS } from './ui/labels.js';
 import { PURPOSES } from './lib/ai-util.js';
 import { COUNT_OPTIONS } from './ui/labels.js';
 import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey } from './ui/start.js';
+import { renderAiStatus } from './ui/aistatus.js';
 import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate } from './ui/photo.js';
 import { decorateIcons, logoMark, icon } from './ui/icons.js';
 import { renderPreview, schedulePreview } from './ui/preview.js';
@@ -258,6 +259,7 @@ async function onProductUpdated(msg) {
 async function onSettingsChanged() {
   try {
     S.settings = await request('core.getSettings');
+    renderAiStatus();
     await loadStatus();
     if (S.phase === 'start') renderStage();
     if (S.phase === 'ready' && S.tab === 'caption') renderTab();
@@ -295,6 +297,7 @@ async function boot() {
   await loadModePrefs();
   render();
   try { S.settings = await request('core.getSettings'); } catch (e) { showError(e); S.settings = { has: {}, fixedTags: [] }; }
+  renderAiStatus();
   await loadStatus();
   await resumeCard();
   await loadProduct();
