@@ -58,3 +58,10 @@ summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; al
 
 /* hidden 속성이 .input 등의 display 지정에 덮이지 않게 (말투 "직접 쓰기" 칸이 늘 보이던 문제) */
 [hidden] { display: none !important; }
+
+/* AI 고르기 (Gemini / GPT) */
+.provider-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 8px; }
+.provider-btn { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 64px; padding: 10px 14px; border: 1px solid var(--line, #E2E8F0); border-radius: 12px; background: #fff; cursor: pointer; text-align: left; font: inherit; }
+.provider-btn[aria-pressed="true"] { border-color: var(--blue, #2563EB); box-shadow: 0 0 0 1px var(--blue, #2563EB) inset; background: var(--blue-soft, #EFF6FF); }
+.provider-name { font-weight: 700; font-size: 17px; color: var(--ink, #0F172A); }
+.provider-state { font-size: 16px; color: var(--sub, #64748B); }

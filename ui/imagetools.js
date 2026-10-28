@@ -10,7 +10,7 @@ import { imageUrl } from './app.js';
 import { showError } from './errors.js';
 import { icon } from './icons.js';
 
-const st = { src: null, kind: 'background', option: 'white', extra: '', busy: false, result: null, fallback: null, srcAspect: '4:5', opts: null };
+const st = { src: null, kind: 'recreate', option: 'studio', extra: '', busy: false, result: null, fallback: null, srcAspect: '4:5', opts: null };
 
 function overlayEl() {
   let o = document.getElementById('overlay');
@@ -66,7 +66,9 @@ function render() {
   const options = t.options.length ? h('div', { class: 'chips', id: 'imgtool-options', role: 'group', 'aria-label': t.label },
     ...t.options.map((op) => h('button', { type: 'button', class: 'chip', 'data-option': op.key, 'aria-pressed': String(st.option === op.key), disabled: st.busy,
       onclick: () => { st.option = op.key; render(); } }, op.label))) : null;
-  const help = st.kind === 'extend'
+  const help = st.kind === 'recreate'
+    ? h('p', { class: 'muted small' }, '판매처 사진을 그대로 올리지 않고, 같은 상품을 다른 각도·구도·배경의 새 사진으로 그려요. 중복 사진으로 걸릴 걱정을 줄여요.')
+    : st.kind === 'extend'
     ? h('p', { class: 'muted small' }, `사진을 자르지 않고 ${targetAspect()} 비율로 바깥을 이어 그려요. 상품이 잘리는 사진에 좋아요.`)
     : st.kind === 'style' ? h('p', { class: 'muted small' }, '구도는 그대로 두고 그림 느낌으로 바꿔요. 상품을 알아볼 수 있게 그려요.')
       : null;

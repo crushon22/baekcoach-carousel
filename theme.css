@@ -582,3 +582,6 @@ body.drop-over #stage { outline: 3px dashed var(--blue); outline-offset: -6px; b
 
 /* PC 웹 사이드바 전용(desktop.css 가 보여 준다) */
 .nav-only, .nav-label { display: none; }
+.recreate-row { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.recreate-row .btn { color: var(--blue-dark); }
+.photo-actions .btn, .recreate-row .btn { gap: 6px; }

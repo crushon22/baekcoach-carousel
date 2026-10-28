@@ -84,38 +84,55 @@ async function renderNotice() {
   setChildren(host, h('h2', null, title || '시작하기 전에'), list, h('label', { class: 'check-row', for: 'notice-ack' }, cb, h('span', null, '확인했어요')));
 }
 
-// ───────────────────────── Gemini 키 ─────────────────────────
+// ───────────────────────── AI 키 (Gemini 또는 GPT) ─────────────────────────
+// 2026-10-28 사용자 결정: 글·이미지를 만드는 AI 를 Gemini 와 GPT(OpenAI) 중에서 고른다. 고른 쪽의 키만 쓴다.
+// Gemini 쪽 칸 id 는 예전 그대로(gemini-key · btn-save-gemini …) 두고, GPT 는 openai-* 를 쓴다.
+
+const PROVIDERS = {
+  gemini: {
+    field: 'geminiKey', id: 'gemini', name: 'Gemini', placeholder: 'Gemini 키를 붙여넣으세요',
+    about: '내 Gemini 키로 글과 이미지를 만들어요. aistudio.google.com/apikey 에서 무료로 만들 수 있어요(결제 연결 없이). 무료 키는 이미지 생성이 막혀 있을 수 있어요.',
+  },
+  openai: {
+    field: 'openaiKey', id: 'openai', name: 'GPT', placeholder: 'GPT(OpenAI) 키를 붙여넣으세요 (sk-로 시작)',
+    about: '내 OpenAI 키로 글과 이미지를 만들어요. platform.openai.com 의 API keys 에서 만들고, Billing 에서 잔액을 충전해야 해요(ChatGPT 구독과는 따로예요). GPT 이미지 모델은 조직 인증(Verify Organization)이 필요할 수 있어요.',
+  },
+};
+const providerOf = () => (settings.aiProvider === 'openai' ? 'openai' : 'gemini');
 
 function renderGemini() {
   const host = $id('gemini-section');
-  const input = h('input', { class: 'input', id: 'gemini-key', type: 'password', autocomplete: 'off', spellcheck: 'false', placeholder: settings.has.geminiKey ? '새 키로 바꾸려면 여기에 붙여넣으세요' : 'Gemini 키를 붙여넣으세요', 'aria-label': 'Gemini 키' });
-  const result = h('div', { id: 'gemini-result', 'aria-live': 'polite' });
+  const pv = providerOf();
+  const P = PROVIDERS[pv];
+  const has = !!settings.has?.[P.field];
+  const input = h('input', { class: 'input', id: `${P.id}-key`, type: 'password', autocomplete: 'off', spellcheck: 'false', placeholder: has ? '새 키로 바꾸려면 여기에 붙여넣으세요' : P.placeholder, 'aria-label': `${P.name} 키` });
+  const result = h('div', { id: `${P.id}-result`, 'aria-live': 'polite' });
   const checkBtn = h('button', { type: 'button', class: 'btn', id: 'btn-check-key' }, '키 연결 확인');
-  const saveBtn = h('button', { type: 'button', class: 'btn btn-primary', id: 'btn-save-gemini' }, '키 저장');
-  const delBtn = settings.has.geminiKey ? h('button', { type: 'button', class: 'btn', id: 'btn-del-gemini' }, '저장된 키 지우기') : null;
+  const saveBtn = h('button', { type: 'button', class: 'btn btn-primary', id: `btn-save-${P.id}` }, '키 저장');
+  const delBtn = has ? h('button', { type: 'button', class: 'btn', id: `btn-del-${P.id}` }, '저장된 키 지우기') : null;
 
   saveBtn.addEventListener('click', async () => {
     const v = input.value.trim();
     if (!v) { setChildren(result, h('p', { class: 'status bad' }, '키를 먼저 붙여넣어 주세요.')); return; }
     try {
-      await save({ geminiKey: v });
+      await save({ [P.field]: v });
       input.value = '';
       renderGemini();
-      statusLine($id('gemini-result'), '키를 저장했어요. 이제 "키 연결 확인"을 눌러 보세요.');
+      statusLine($id(`${P.id}-result`), '키를 저장했어요. 이제 "키 연결 확인"을 눌러 보세요.');
     } catch (e) { setChildren(result, errorBox(normalizeError(e, WHERE.PANEL))); }
   });
   delBtn?.addEventListener('click', async () => {
-    await save({ geminiKey: null });
+    await save({ [P.field]: null });
     renderGemini();
-    statusLine($id('gemini-result'), '저장된 키를 지웠어요.');
+    statusLine($id(`${P.id}-result`), '저장된 키를 지웠어요.');
   });
   checkBtn.addEventListener('click', async () => {
     const typed = input.value.trim();
-    if (!typed && !settings.has.geminiKey) { setChildren(result, h('p', { class: 'status bad' }, '먼저 키를 붙여넣고 확인해 주세요.')); return; }
+    if (!typed && !has) { setChildren(result, h('p', { class: 'status bad' }, '먼저 키를 붙여넣고 확인해 주세요.')); return; }
     checkBtn.disabled = true; checkBtn.textContent = '확인하는 중…';
     setChildren(result);
     try {
-      const r = await request('ai.checkKey', typed ? { key: typed } : {}, { timeoutMs: 60000 });
+      const r = await request('ai.checkKey', typed ? { key: typed, provider: pv } : { provider: pv }, { timeoutMs: 60000 });
       setChildren(result, h('div', { class: 'result-box', id: 'check-ok' },
         h('strong', null, r.slow ? '✅ 키는 정상이에요 (응답이 느려요)' : '✅ 연결됐어요'),
         r.warning ? h('p', { class: 'status warn' }, r.warning) : null,
@@ -130,13 +147,23 @@ function renderGemini() {
     checkBtn.disabled = false; checkBtn.textContent = '키 연결 확인';
   });
 
+  // 어떤 AI 로 만들지: 고르면 바로 저장. 다른 쪽 키는 지우지 않는다(다시 바꾸면 그대로 쓴다)
+  const pick = async (next) => {
+    if (next === pv) return;
+    try { await save({ aiProvider: next }); renderGemini(); } catch (e) { setChildren(result, errorBox(normalizeError(e, WHERE.PANEL))); }
+  };
+  const seg = h('div', { class: 'provider-seg', id: 'ai-provider', role: 'group', 'aria-label': '사용할 AI' },
+    ...Object.entries(PROVIDERS).map(([k, x]) => h('button', { type: 'button', class: 'provider-btn', 'data-provider': k, 'aria-pressed': String(pv === k), onclick: () => pick(k) },
+      h('span', { class: 'provider-name' }, x.name), h('span', { class: 'provider-state' }, settings.has?.[x.field] ? '키 저장됨' : '키 없음'))));
+
   setChildren(host,
-    h('div', { class: 'field-head' }, h('h2', { id: 'gemini-h' }, icon('key', { size: 22 }), 'Gemini 키 (필수)'), h('span', { id: 'gemini-state' }, badge(settings.has.geminiKey))),
-    h('p', null, '글과 이미지는 내 Gemini 키로 만들어요. aistudio.google.com/apikey 에서 무료로 만들 수 있어요(결제 연결 없이).'),
-    h('button', { type: 'button', class: 'btn btn-quiet', id: 'btn-key-howto', onclick: () => openGuide({ focus: 'faq-key' }) }, icon('help', { size: 18 }), '키 만드는 법'),
-    IS_WEB ? h('p', { class: 'muted small', id: 'key-help' }, '결제를 연결하지 않은 새 프로젝트에서 키를 만들어야 무료로 쓸 수 있어요. "크레딧이 소진됐어요(402)" 같은 오류가 나면 새 프로젝트에서 만든 키로 바꿔 보세요.') : null,
+    h('div', { class: 'field-head' }, h('h2', { id: 'gemini-h' }, icon('key', { size: 22 }), 'AI 키 (필수)'), h('span', { id: `${P.id}-state` }, badge(has))),
+    h('p', { class: 'label' }, '글과 이미지를 만들 AI'), seg,
+    h('p', { id: 'provider-about' }, P.about),
+    pv === 'gemini' ? h('button', { type: 'button', class: 'btn btn-quiet', id: 'btn-key-howto', onclick: () => openGuide({ focus: 'faq-key' }) }, icon('help', { size: 18 }), '키 만드는 법') : null,
+    IS_WEB && pv === 'gemini' ? h('p', { class: 'muted small', id: 'key-help' }, '결제를 연결하지 않은 새 프로젝트에서 키를 만들어야 무료로 쓸 수 있어요. "크레딧이 소진됐어요(402)" 같은 오류가 나면 새 프로젝트에서 만든 키로 바꿔 보세요.') : null,
     IS_WEB ? h('p', { class: 'warn-line small', id: 'key-storage-note' }, '이 키는 이 브라우저(이 사이트)에만 저장돼요. 공용 컴퓨터에서는 다 쓴 뒤 "저장된 키 지우기"를 꼭 눌러 주세요.') : null,
-    h('label', { class: 'label', for: 'gemini-key' }, 'Gemini 키'), input,
+    h('label', { class: 'label', for: `${P.id}-key` }, `${P.name} 키`), input,
     h('div', { class: 'btn-row' }, saveBtn, checkBtn, delBtn),
     result);
 }

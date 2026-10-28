@@ -11,6 +11,7 @@ import { icon } from './icons.js';
 import { fontDetails, pickStartFont } from './fontpick.js';
 import { adPanel, adCfg, adFields } from './adlabel.js';
 import { openImageTool } from './imagetools.js';
+import { TRANSFORMS } from '../lib/imageprompt.js';
 
 export const STYLES = [
   { key: 'outline', label: '테두리', desc: '굵은 흰 글씨 + 검은 테두리' },
@@ -116,12 +117,52 @@ export function photoStrip(list, { key, listId, uploadId, firstLabel = '커버',
   });
   const add = h('button', { type: 'button', class: 'photo-add', id: uploadId, 'aria-label': '사진 추가', onclick: onAdd }, icon('plus', { size: 22 }), h('span', null, '추가'));
   const row = h('div', { class: 'photo-row' }, ul, add);
+  const todo = list.filter((id) => !S.genImages?.has(id)).length;
+  const busy = recreating && recreating.listId === listId;
+  const recreate = list.length ? h('div', { class: 'recreate-row', id: `${listId}-recreate-row` },
+    h('button', { type: 'button', class: 'btn btn-block', id: `${listId}-recreate`, disabled: !!recreating || !todo, onclick: () => recreateAll(list, listId) },
+      icon('sparkle', { size: 18 }), busy ? `새로 그리는 중… ${recreating.done}/${recreating.total}` : todo ? `사진 ${todo}장 AI로 새로 그리기 (중복 피하기)` : '모두 새로 그린 사진이에요'),
+    h('p', { class: 'muted small' }, '판매처 사진을 그대로 쓰지 않고, 같은 상품을 다른 각도·구도·배경의 새 사진으로 바꿔요. 원본은 그대로 남고, 카드에는 "연출 이미지" 표시가 붙어요.')) : null;
   const actions = sel !== null && list[sel] ? h('div', { class: 'photo-actions', id: `${listId}-actions` },
     h('button', { type: 'button', class: 'btn', 'data-act': 'up', disabled: sel === 0, onclick: () => move(list, sel, -1, key) }, icon('arrowLeft', { size: 18 }), '앞으로'),
     h('button', { type: 'button', class: 'btn', 'data-act': 'down', disabled: sel === list.length - 1, onclick: () => move(list, sel, 1, key) }, '뒤로', icon('arrowRight', { size: 18 })),
     h('button', { type: 'button', class: 'btn', 'data-act': 'remove', onclick: () => { list.splice(sel, 1); S.photoSel[key] = null; fn.renderStage(); } }, '빼기'),
     h('button', { type: 'button', class: 'btn', 'data-act': 'transform', onclick: () => transformListPhoto(list, sel) }, icon('sparkle', { size: 18 }), 'AI로 바꾸기')) : null;
-  return h('div', { class: 'photo-strip' }, row, actions);
+  return h('div', { class: 'photo-strip' }, row, actions, recreate);
+}
+
+/** 사진 전부 새로 그리기(중복 피하기): 아직 새로 그리지 않은 사진을 2장씩 차례로 image.transform(recreate) 에 보낸다.
+ *  연출은 사진마다 돌려 가며(깔끔한 연출 → 생활 속 → 다른 각도 → 위에서) 서로 비슷해지지 않게 한다. 한도에 걸리면 멈추고 안내한다. */
+let recreating = null;   // {listId, done, total}
+const RECREATE_OPTS = TRANSFORMS.find((t) => t.key === 'recreate').options.map((o) => o.key);
+async function recreateAll(list, listId) {
+  if (recreating) return;
+  const ids = list.filter((id) => !S.genImages?.has(id));
+  if (!ids.length) return;
+  recreating = { listId, done: 0, total: ids.length };
+  fn.renderStage();
+  const title = (S.manual.title || '').trim() || S.rec?.product?.title;
+  let stop = null, k = 0;
+  const one = async (id) => {
+    if (stop) return;
+    const option = RECREATE_OPTS[(list.indexOf(id) >= 0 ? list.indexOf(id) : k++) % RECREATE_OPTS.length];
+    try {
+      const r = await request('image.transform', { imageId: id, kind: 'recreate', option, aspect: '4:5', productTitle: title }, { timeoutMs: 200000 });
+      if (r.fallback || !r.imageId) { stop = stop || { messageKo: r.messageKo }; return; }
+      const at = list.indexOf(id);
+      if (at >= 0) { list[at] = r.imageId; (S.genImages ||= new Set()).add(r.imageId); }
+    } catch (e) { stop = stop || { error: e }; return; }
+    recreating.done++;
+    fn.renderStage();
+  };
+  const queue = ids.slice();
+  await Promise.all([0, 1].map(async () => { while (queue.length && !stop) await one(queue.shift()); }));
+  const done = recreating.done;
+  recreating = null;
+  fn.renderStage();
+  if (stop?.error) showError(stop.error);
+  else if (stop) toast(`${done}장을 새로 그렸어요. ${stop.messageKo || '이미지 생성 한도에 걸렸어요.'}`, { kind: 'warn', ms: 7000 });
+  else toast(`사진 ${done}장을 새로 그렸어요. 원본은 그대로 남아 있어요.`);
 }
 
 /** 사진 줄의 한 장을 AI 로 바꾼다. 바꾼 사진은 같은 자리에 들어가고, 만들 때 그 카드에 "연출 이미지" 표시가 붙는다(S.genImages). */

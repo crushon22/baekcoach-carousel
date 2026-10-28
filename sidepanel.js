@@ -201,7 +201,7 @@ async function onMake(kind) {
 async function makeFromShorts(script) {
   const text = String(script || '').trim();
   if (text.length < 10) { toast('쇼츠 대본을 10자 이상 붙여 넣어 주세요.', { kind: 'warn' }); return; }
-  if (!hasKey()) { toast('먼저 설정에서 Gemini 키를 넣어 주세요.', { kind: 'warn' }); return; }
+  if (!hasKey()) { toast('먼저 설정에서 AI 키(Gemini 또는 GPT)를 넣어 주세요.', { kind: 'warn' }); return; }
   if (S.project && S.phase === 'ready') await saveNow();
   S.link = '';
   await startGenerate({ source: 'shorts', script: text }, { link: '' });

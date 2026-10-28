@@ -11,7 +11,7 @@ import { modeTabs, renderPhotoStart, buildPhotoProduct, fontCard, photoStrip } f
 import { icon } from './icons.js';
 import { adPanel, adCfg } from './adlabel.js';
 
-const hasKey = () => !!(S.settings?.has?.geminiKey || S.settings?.devMockAI);
+const hasKey = () => !!(S.settings?.has?.[store.aiKeyName(S.settings)] || S.settings?.devMockAI);
 
 // ───────────────────────── 상품 정보 모으기 ─────────────────────────
 
@@ -195,11 +195,11 @@ export function renderStrip() {
 
 function keyNotice() {
   return h('section', { class: 'card notice-card', id: 'nokey' },
-    h('h2', null, '먼저 Gemini 키가 필요해요'),
-    h('p', null, '글과 이미지는 내 Gemini 키로 만들어요. 키는 무료로 만들 수 있고, 이 브라우저에만 저장돼요.'),
+    h('h2', null, '먼저 AI 키가 필요해요'),
+    h('p', null, '글과 이미지는 내 AI 키로 만들어요. Gemini(무료로 시작 가능)나 GPT 중 하나를 고르면 돼요. 키는 이 브라우저에만 저장돼요.'),
     h('ol', { class: 'steps' },
-      h('li', null, 'aistudio.google.com/apikey 에서 키를 만들어요 (결제 연결 없이 무료).'),
-      h('li', null, '아래 버튼으로 설정을 열어 키를 붙여넣고 "키 연결 확인"을 눌러요.')),
+      h('li', null, 'Gemini: aistudio.google.com/apikey 에서 무료로 만들어요 (결제 연결 없이). GPT: platform.openai.com 에서 만들고 잔액을 충전해요.'),
+      h('li', null, '아래 버튼으로 설정을 열어 AI를 고르고 키를 붙여넣은 뒤 "키 연결 확인"을 눌러요.')),
     h('button', { type: 'button', class: 'btn btn-primary btn-block', id: 'btn-open-options', onclick: () => fn.openOptions() }, icon('key', { size: 20 }), '설정에서 키 넣기'));
 }
 
