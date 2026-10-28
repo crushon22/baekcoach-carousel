@@ -32,9 +32,9 @@ export async function loadModePrefs() {
   } catch { /* 기억 못 해도 기본값 */ }
 }
 export function fontCard() {
-  return h('section', { class: 'card', id: 'font-card' },
+  return h('section', { class: 'extra', id: 'font-card' },
     fontDetails({ value: S.font, onPick: pickStartFont, id: 'font-picker', open: !!S.fontOpen }),
-    h('p', { class: 'muted small' }, '카드 글씨 모양을 골라요. 열 때만 글꼴을 불러오고, 만든 뒤에도 바꿀 수 있어요.'));
+    null);
 }
 
 export function saveModePrefs() {
@@ -51,22 +51,14 @@ export function stylePreview(key) {
   return box;
 }
 
-function exampleCardnews() {
-  return h('span', { class: 'mode-ex ex-cardnews', 'aria-hidden': 'true' }, h('i', { class: 'ex-chip' }), h('i', { class: 'ex-title' }), h('i', { class: 'ex-line' }), h('i', { class: 'ex-line short' }));
-}
-function examplePhoto() {
-  return h('span', { class: 'mode-ex ex-photo', 'aria-hidden': 'true' }, h('span', { class: 'sp-text' }, '글만\n쓱'));
-}
-
-/** [카드뉴스 | 사진 캐러셀] 큰 탭 2개 */
+/** [카드뉴스 | 사진 캐러셀] 세그먼트 스위치 (트랙 + 흰 썸) */
 export function modeTabs() {
-  const tab = (mode, name, desc, ex) => h('button', {
+  const tab = (mode, name) => h('button', {
     type: 'button', role: 'tab', class: 'mode-tab', id: `mode-${mode}`, 'aria-selected': String(S.mode === mode), 'data-mode': mode,
     onclick: () => setMode(mode),
-  }, ex, h('span', { class: 'mode-name' }, name), h('span', { class: 'mode-desc' }, desc));
+  }, name);
   return h('div', { class: 'mode-tabs', id: 'mode-tabs', role: 'tablist', 'aria-label': '만들 버전 고르기' },
-    tab('cardnews', '카드뉴스', '글 카드로 정리해요', exampleCardnews()),
-    tab('photo', '사진 캐러셀', '사진을 넣으면 글만 써 줘요', examplePhoto()));
+    tab('cardnews', '카드뉴스'), tab('photo', '사진 캐러셀'));
 }
 
 export function setMode(mode) {
@@ -74,6 +66,7 @@ export function setMode(mode) {
   S.mode = mode;
   saveModePrefs();
   fn.renderModebar();
+  fn.renderPreview();
   fn.renderStrip();
   fn.renderStage();
 }
@@ -97,27 +90,34 @@ async function uploadPhotos() {
   fn.renderStage();
 }
 
-function move(i, d) {
+function move(list, i, d, key) {
   const j = i + d;
-  if (j < 0 || j >= S.photos.length) return;
-  [S.photos[i], S.photos[j]] = [S.photos[j], S.photos[i]];
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  S.photoSel[key] = j;
   fn.renderStage();
 }
 
-function photoList() {
-  const list = h('ul', { class: 'photo-list', id: 'photo-list' });
-  S.photos.forEach((id, i) => {
-    const t = h('div', { class: 'thumb', style: { width: '56px', height: '56px' } }, h('span', { class: 'thumb-empty' }, '…'));
-    imageUrl(id).then((u) => { if (u) t.replaceChildren(h('img', { src: u, alt: '' })); });
-    list.append(h('li', { class: 'photo-item', 'data-i': i, 'data-id': id },
-      t,
-      h('span', { class: 'photo-no' }, i === 0 ? '1번 · 커버' : `${i + 1}번`),
-      h('span', { class: 'photo-btns' },
-        h('button', { type: 'button', class: 'btn', 'data-act': 'up', disabled: i === 0, 'aria-label': `${i + 1}번 사진을 앞으로`, onclick: () => move(i, -1) }, '↑'),
-        h('button', { type: 'button', class: 'btn', 'data-act': 'down', disabled: i === S.photos.length - 1, 'aria-label': `${i + 1}번 사진을 뒤로`, onclick: () => move(i, 1) }, '↓'),
-        h('button', { type: 'button', class: 'btn', 'data-act': 'remove', 'aria-label': `${i + 1}번 사진 빼기`, onclick: () => { S.photos.splice(i, 1); fn.renderStage(); } }, '빼기'))));
+/**
+ * 사진 썸네일 가로 줄: 맨 앞 [+ 추가] 타일, 썸네일을 누르면 선택되고 아래에 앞으로·뒤로·빼기 한 줄이 나온다.
+ * opts: {key, listId, uploadId, firstLabel, onAdd}
+ */
+export function photoStrip(list, { key, listId, uploadId, firstLabel = '커버', onAdd }) {
+  const sel = S.photoSel[key] ?? null;
+  const ul = h('ul', { class: 'photo-list', id: listId });
+  list.forEach((id, i) => {
+    const b = h('button', { type: 'button', class: 'photo-thumb', 'aria-pressed': String(sel === i), 'aria-label': `${i + 1}번 사진 ${sel === i ? '선택 해제' : '선택'}`, onclick: () => { S.photoSel[key] = sel === i ? null : i; fn.renderStage(); } },
+      h('span', { class: 'thumb-empty' }, '…'));
+    imageUrl(id).then((u) => { if (u) b.replaceChildren(h('img', { src: u, alt: '' })); });
+    ul.append(h('li', { class: 'photo-item web-photo', 'data-i': i, 'data-id': id }, b, h('span', { class: 'photo-no web-photo-tag' }, i === 0 ? firstLabel : String(i + 1))));
   });
-  return list;
+  const add = h('button', { type: 'button', class: 'photo-add', id: uploadId, 'aria-label': '사진 추가', onclick: onAdd }, icon('plus', { size: 22 }), h('span', null, '추가'));
+  const row = h('div', { class: 'photo-row' }, ul, add);
+  const actions = sel !== null && list[sel] ? h('div', { class: 'photo-actions', id: `${listId}-actions` },
+    h('button', { type: 'button', class: 'btn', 'data-act': 'up', disabled: sel === 0, onclick: () => move(list, sel, -1, key) }, icon('arrowLeft', { size: 18 }), '앞으로'),
+    h('button', { type: 'button', class: 'btn', 'data-act': 'down', disabled: sel === list.length - 1, onclick: () => move(list, sel, 1, key) }, '뒤로', icon('arrowRight', { size: 18 })),
+    h('button', { type: 'button', class: 'btn', 'data-act': 'remove', onclick: () => { list.splice(sel, 1); S.photoSel[key] = null; fn.renderStage(); } }, '빼기')) : null;
+  return h('div', { class: 'photo-strip' }, row, actions);
 }
 
 /** 확장: 쿠팡 상품 사진 골라 넣기 */
@@ -133,7 +133,7 @@ function productPhotoPicker() {
     if (id) imageUrl(id).then((u) => { if (u) b.replaceChildren(h('img', { src: u, alt: '' })); });
     grid.append(b);
   }
-  return h('div', null, h('div', { class: 'label' }, '쿠팡 상품 사진에서 고르기'), grid, h('p', { class: 'muted small' }, '누르면 사진 목록 맨 뒤에 들어가요. 다시 누르면 빠져요.'));
+  return h('div', null, h('div', { class: 'label' }, '쿠팡 상품 사진에서 고르기'), grid, h('p', { class: 'muted small' }, '누르면 맨 뒤에 들어가요. 다시 누르면 빠져요.'));
 }
 
 async function addProductPhoto(i) {
@@ -157,24 +157,19 @@ async function addProductPhoto(i) {
 function styleButtons() {
   return h('div', { class: 'style-grid', id: 'style-picker', role: 'group', 'aria-label': '글씨 스타일' },
     ...STYLES.map((s) => h('button', { type: 'button', class: 'style-btn', 'data-style': s.key, 'aria-pressed': String(S.photoStyle === s.key), onclick: () => { S.photoStyle = s.key; saveModePrefs(); fn.renderStage(); } },
-      stylePreview(s.key), h('span', { class: 'style-name' }, s.label), h('span', { class: 'muted small' }, s.desc))));
+      stylePreview(s.key), h('span', { class: 'style-name' }, s.label))));
 }
 
 function infoForm() {
-  const title = h('input', { id: 'photo-title', class: 'input', placeholder: '예: 무선 핸디 청소기 (없어도 돼요)', 'aria-label': '상품 이름 (선택)' });
-  title.value = S.manual.title;
-  title.addEventListener('input', () => { S.manual.title = title.value; });
-  const price = h('input', { id: 'photo-price', class: 'input', inputmode: 'numeric', placeholder: '예: 59900 (비워 두면 가격은 링크에서 확인)', 'aria-label': '가격 (선택)' });
+  const price = h('input', { id: 'photo-price', class: 'input', inputmode: 'numeric', placeholder: '예: 59900 (비우면 가격은 링크에서 확인)', 'aria-label': '가격 (선택)' });
   price.value = S.manual.price;
   price.addEventListener('input', () => { S.manual.price = price.value; });
   const desc = h('textarea', { id: 'photo-desc', class: 'input', rows: 3, placeholder: '상품 설명·특징을 붙여 넣으면 글이 더 정확해져요', 'aria-label': '상품 설명 (선택)' });
   desc.value = S.manual.desc || '';
   desc.addEventListener('input', () => { S.manual.desc = desc.value; });
-  return h('details', { class: 'card extra', id: 'photo-info', open: !!(S.manual.title || S.manual.desc) },
-    h('summary', null, '상품 정보 넣기 (선택)'),
+  return h('details', { class: 'extra', id: 'photo-info', open: !!S.manual.desc },
+    h('summary', null, '가격·상품 설명'),
     h('div', { class: 'form' },
-      h('p', { class: 'muted small' }, '있으면 글이 더 정확해져요. 없어도 사진만 보고 써 줘요. 붙여 넣은 내용은 "내가 입력한 정보"로 기록돼요.'),
-      h('label', { class: 'label', for: 'photo-title' }, '상품 이름'), title,
       h('label', { class: 'label', for: 'photo-price' }, '가격'), price,
       h('label', { class: 'label', for: 'photo-desc' }, '상품 설명·특징'), desc));
 }
@@ -184,27 +179,27 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
   if (!hasKey()) { kids.push(keyNotice()); return; }
   const n = S.photos.length;
   const pageProduct = !IS_WEB && S.rec?.product;
-  kids.push(h('section', { class: 'card', id: 'photo-start' },
-    h('h2', null, icon('photo', { size: 24, cls: 'h-ico' }), '사진을 넣어 주세요'),
-    h('p', { class: 'muted' }, `사진 ${MIN_PHOTOS}~${MAX_PHOTOS}장을 순서대로 넣어요. 1번이 커버예요.`),
-    n ? photoList() : null,
-    n ? h('p', { class: 'muted small', id: 'photo-count' }, `지금 ${n}장`) : null,
-    h('button', { type: 'button', class: 'btn btn-block', id: 'btn-photo-upload', onclick: uploadPhotos }, n ? '사진 더 올리기' : '사진 올리기 (여러 장 한 번에)'),
-    productPhotoPicker()),
-  h('section', { class: 'card extra', id: 'photo-style' },
-    h('h2', null, '글씨 스타일'), styleButtons(),
+  const title = h('input', { id: 'photo-title', class: 'input', placeholder: '예: 무선 핸디 청소기', 'aria-label': '상품 이름 (선택)' });
+  title.value = S.manual.title;
+  title.addEventListener('input', () => { S.manual.title = title.value; fn.schedulePreview(300); });
+  kids.push(h('section', { class: 'field-block', id: 'photo-start' },
+    pageProduct ? null : h('label', { class: 'label', for: 'photo-title' }, '상품 이름 (선택)'),
+    pageProduct ? null : title,
+    h('div', { class: 'label label-row' }, h('span', null, '사진'), h('span', { class: 'muted small', id: 'photo-count' }, `${n}장 · 2~${MAX_PHOTOS}장`)),
+    photoStrip(S.photos, { key: 'photo', listId: 'photo-list', uploadId: 'btn-photo-upload', firstLabel: '커버', onAdd: uploadPhotos }),
+    productPhotoPicker()));
+  kids.push(h('section', { class: 'extra', id: 'photo-style' },
+    h('div', { class: 'label' }, '글씨 스타일'), styleButtons(),
     (() => {
       const cb = h('input', { type: 'checkbox', id: 'ad-label', checked: S.adLabel });
       cb.addEventListener('change', () => { S.adLabel = cb.checked; saveModePrefs(); fn.renderStage(); });
       return h('label', { class: 'check-row', for: 'ad-label' }, cb, h('span', null, '사진 왼쪽 위에 [광고] 표시'));
     })(),
-    S.adLabel ? h('p', { class: 'muted small' }, '파트너스 게시물이면 켜 두세요.')
-      : h('p', { class: 'warn-line small', id: 'ad-off-note' }, '파트너스 게시물이면 켜 두세요. 끄면 광고 표시가 사진에 들어가지 않아요.')));
-  if (!pageProduct) kids.push(infoForm());
-  const make = h('div', { class: 'make-wrap' },
-    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', disabled: n < MIN_PHOTOS, onclick: () => fn.onMake() }, icon('sparkle', { size: 22 }), '만들기'),
-    n < MIN_PHOTOS ? h('p', { class: 'warn-line small center', id: 'photo-few' }, `사진을 ${MIN_PHOTOS}장 이상 올려 주세요 (지금 ${n}장)`) : h('p', { class: 'muted small center' }, '사진마다 글을 쓰고 캡션·쇼츠 대본도 만들어요.'));
-  kids.push(make);
+    S.adLabel ? null : h('p', { class: 'warn-line small', id: 'ad-off-note' }, '파트너스 게시물이면 켜 두세요.')));
+  kids.push(infoForm());
+  kids.push(h('div', { class: 'make-wrap' },
+    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', disabled: n < MIN_PHOTOS, onclick: () => fn.onMake() }, '만들기'),
+    n < MIN_PHOTOS ? h('p', { class: 'warn-line small center', id: 'photo-few' }, `사진을 ${MIN_PHOTOS}장 이상 올려 주세요 (지금 ${n}장)`) : null));
 }
 
 /** ai.generate 에 넘길 product (사진 모드). 사진이 모자라면 null */

@@ -74,7 +74,7 @@ export function openGuide({ focus } = {}) {
   o.replaceChildren(h('div', { class: 'sheet guide-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': '사용 방법', id: 'guide-sheet' },
     h('div', { class: 'sheet-head' }, h('span', { class: 'pill-badge' }, '사용 가이드'), h('button', { type: 'button', class: 'btn', id: 'btn-guide-close', onclick: closeGuide }, '닫기')),
     h('div', { class: 'sheet-body guide-body', tabindex: -1 },
-      h('h2', { class: 'guide-title' }, '단 3단계로 끝나는', h('br'), h('span', { class: 'grad' }, '캐러셀 만들기')),
+      h('h2', { class: 'guide-title' }, '단 3단계로 끝나는', h('br'), '캐러셀 만들기'),
       h('p', { class: 'guide-sub' }, '상품 사진과 이름만 넣으면 카드·캡션·쇼츠 대본까지 한 번에 만들어요.'),
       h('h3', { class: 'guide-h' }, '3단계 퀵 스타트'),
       h('div', { class: 'qs-grid' }, ...QUICK.map(card)),

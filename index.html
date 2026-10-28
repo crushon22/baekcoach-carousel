@@ -26,6 +26,7 @@
     <div id="banner" hidden></div>
     <div id="hero"></div>
     <div id="modebar"></div>
+    <div id="livepreview"></div>
     <div id="strip"></div>
     <div id="notices"></div>
     <div id="decision" hidden></div>
@@ -48,9 +49,9 @@
     <form id="chat-form" class="chat-form" autocomplete="off">
       <input id="chat-input" class="input" type="text" placeholder="말로 고쳐요. 예: 3번 짧게, 베이지로" aria-label="말로 수정하기">
       <button type="button" id="chat-mic" class="btn btn-mic" aria-label="말로 입력(마이크)" aria-pressed="false" data-icon="mic" hidden><span class="lbl mic-lbl" hidden>듣는 중</span></button>
-      <button type="submit" id="chat-send" class="btn btn-primary" data-icon="send"><span class="lbl">보내기</span></button>
+      <button type="submit" id="chat-send" class="btn btn-primary" aria-label="보내기" data-icon="send"><span class="lbl">보내기</span></button>
     </form>
-    <button type="button" id="btn-export" class="btn btn-primary btn-block btn-export" data-icon="sparkle">내보내기</button>
+    <button type="button" id="btn-export" class="btn btn-primary btn-block btn-export" >내보내기</button>
   </footer>
 
   <div id="overlay" class="overlay" hidden></div>

@@ -7,7 +7,7 @@ import { WHERE } from '../lib/common.js';
 import { h, setChildren, pickImageFile, pickImageFiles, toast } from './dom.js';
 import { S, fn, el, imageUrl } from './app.js';
 import { showError } from './errors.js';
-import { modeTabs, renderPhotoStart, buildPhotoProduct, fontCard } from './photo.js';
+import { modeTabs, renderPhotoStart, buildPhotoProduct, fontCard, photoStrip } from './photo.js';
 import { icon } from './icons.js';
 
 const hasKey = () => !!(S.settings?.has?.geminiKey || S.settings?.devMockAI);
@@ -194,7 +194,7 @@ export function renderStrip() {
 
 function keyNotice() {
   return h('section', { class: 'card notice-card', id: 'nokey' },
-    h('h2', null, icon('key', { size: 24, cls: 'h-ico' }), '먼저 Gemini 키가 필요해요'),
+    h('h2', null, '먼저 Gemini 키가 필요해요'),
     h('p', null, '글과 이미지는 내 Gemini 키로 만들어요. 키는 무료로 만들 수 있고, 이 브라우저에만 저장돼요.'),
     h('ol', { class: 'steps' },
       h('li', null, 'aistudio.google.com/apikey 에서 키를 만들어요 (결제 연결 없이 무료).'),
@@ -204,7 +204,7 @@ function keyNotice() {
 
 function makeButton(label = '만들기') {
   return h('div', { class: 'make-wrap' },
-    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', onclick: () => fn.onMake() }, icon('sparkle', { size: 22 }), label),
+    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', onclick: () => fn.onMake() }, label),
     h('p', { class: 'muted small center' }, '카드·캡션·쇼츠 대본을 한 번에 만들어요.'));
 }
 
@@ -216,6 +216,7 @@ function manualForm({ withPrice, titleLabel, titleHint, note }) {
     S.manual.title = title.value;
     const t = document.getElementById('strip-title'); if (t) t.textContent = title.value.trim() || '(상품 이름을 적어 주세요)';
     updateMakeEnabled();
+    fn.schedulePreview(300);
   });
   title.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); fn.onMake(); } });
   const price = withPrice ? h('input', { id: 'manual-price', class: 'input', inputmode: 'numeric', placeholder: '가격(숫자만, 모르면 비워 두세요)', 'aria-label': '가격' }) : null;
@@ -339,13 +340,12 @@ export function renderStartStage() {
   } else {
     // 상품 페이지가 아님 → 채팅 모드
     kids.push(h('section', { class: 'card', id: 'chat-mode' },
-      h('h2', null, '쿠팡 상품 페이지를 열면 자동으로 채워져요'),
-      h('p', { class: 'muted' }, '상품 페이지가 아니에요. 보고 있는 상품이 있으면 그 페이지로 가 주세요. 아니면 아래에 상품 이름이나 주제를 적어도 돼요.'),
+      h('p', { class: 'muted' }, '쿠팡 상품 페이지를 열면 자동으로 채워져요. 아니면 아래에 상품 이름이나 주제를 적어 주세요.'),
       manualForm({ withPrice: false, titleLabel: '상품 이름 또는 주제', titleHint: '예: 에어랩 캐러셀, 요즘 뜨는 핸디 청소기' }),
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-read-page', onclick: async () => { await loadProduct({ refresh: true }); fn.renderStrip(); fn.renderStage(); if (!S.rec?.product) toast('이 탭은 쿠팡 상품 페이지가 아니에요.', { kind: 'warn' }); } }, '지금 보는 탭에서 상품 읽기'),
       S.cp?.hasKeys ? searchPanel() : null),
     makeButton('이 내용으로 만들기'));
-    kids.push(h('details', { class: 'card extra', id: 'shorts-start' }, h('summary', null, '쇼츠 대본으로 시작하기'),
+    kids.push(h('details', { class: 'extra', id: 'shorts-start' }, h('summary', null, '쇼츠 대본으로 시작하기'),
       shortsStartForm()));
   }
   assemble(kids);
@@ -359,14 +359,15 @@ function assemble(kids) {
   if (hasMake) extras.push(fontCard());
   if (extras.length) {
     const d = h('details', { class: 'more', id: 'more-options', open: !!(S.unfold || S.moreOpen) },
-      h('summary', null, icon('sliders', { size: 20 }), h('span', null, '더 꾸미기 · 옵션')),
+      h('summary', null, h('span', null, '옵션'), h('span', { class: 'more-hint' }, '글씨체 · 스타일 · 가격 · 설명')),
       h('div', { class: 'more-body' }, ...extras));
     d.addEventListener('toggle', () => { S.moreOpen = d.open; });
     main.push(d);
   }
-  if (S.resume) main.push(h('button', { type: 'button', class: 'link-btn', id: 'btn-resume', onclick: () => fn.openProject(S.resume.id) }, icon('clock', { size: 18 }), `하던 작업 이어서 하기 · ${S.resume.title || '제목 없음'}`));
+  if (S.resume) main.push(h('button', { type: 'button', class: 'link-btn', id: 'btn-resume', onclick: () => fn.openProject(S.resume.id) }, icon('clock', { size: 18 }), `이어서 하기: ${S.resume.title || '제목 없음'}`));
   setChildren(el.stage, ...main);
   updateMakeEnabled();
+  fn.schedulePreview(60);
 }
 
 // ───────────────────────── 웹 버전 시작 화면 ─────────────────────────
@@ -382,59 +383,50 @@ async function addWebPhotos(list) {
 }
 
 function photoBlock(list, { label }) {
-  const row = h('div', { class: 'thumbs web-photos' });
-  list.forEach((id, i) => {
-    const t = h('div', { class: 'thumb', style: { width: '64px', height: '64px' } }, h('span', { class: 'thumb-empty' }, '…'));
-    imageUrl(id).then((u) => { if (u) t.replaceChildren(h('img', { src: u, alt: '' })); });
-    row.append(h('div', { class: 'web-photo' }, t,
-      h('span', { class: 'small web-photo-tag' }, i === 0 ? '대표' : `${i + 1}번`),
-      h('button', { type: 'button', class: 'btn btn-quiet', 'aria-label': `${i + 1}번 사진 빼기`, onclick: () => { list.splice(i, 1); fn.renderStage(); } }, '빼기')));
-  });
+  const isTopic = list === S.topicImageIds;
   return h('div', null,
     h('div', { class: 'label' }, label),
-    list.length ? row : null,
-    list.length ? h('p', { class: 'muted small' }, '첫 장이 대표 사진이에요.') : null,
-    h('button', { type: 'button', class: 'btn btn-block', id: list === S.topicImageIds ? 'btn-upload-topic' : 'btn-upload-web', onclick: () => addWebPhotos(list) }, list.length ? '사진 더 올리기' : '사진 올리기 (여러 장 가능)'));
+    photoStrip(list, { key: isTopic ? 'topic' : 'web', listId: isTopic ? 'topic-photo-list' : 'web-photo-list', uploadId: isTopic ? 'btn-upload-topic' : 'btn-upload-web', firstLabel: '대표', onAdd: () => addWebPhotos(list) }));
 }
 
 function renderWebStart(kids) {
   S.manual.imageIds = S.manual.imageIds || [];
   S.topicImageIds = S.topicImageIds || [];
   if (!hasKey()) { kids.push(keyNotice()); return; }
-  const title = h('textarea', { id: 'manual-title', class: 'input', rows: 2, placeholder: '예: 무선 핸디 청소기 화이트', 'aria-label': '상품 이름' });
+  const title = h('textarea', { id: 'manual-title', class: 'input', rows: 1, placeholder: '예: 무선 핸디 청소기 화이트', 'aria-label': '상품 이름' });
   title.value = S.manual.title;
-  title.addEventListener('input', () => { S.manual.title = title.value; updateMakeEnabled(); });
+  title.addEventListener('input', () => { S.manual.title = title.value; updateMakeEnabled(); fn.schedulePreview(300); });
   const price = h('input', { id: 'manual-price', class: 'input', inputmode: 'numeric', placeholder: '예: 59900 (모르면 비워 두세요)', 'aria-label': '가격' });
   price.value = S.manual.price;
   price.addEventListener('input', () => { S.manual.price = price.value; });
   const desc = h('textarea', { id: 'manual-desc', class: 'input', rows: 5, placeholder: '쿠팡 상품 페이지의 설명·특징을 복사해서 붙여 넣으세요', 'aria-label': '상품 설명 또는 특징' });
   desc.value = S.manual.desc || '';
   desc.addEventListener('input', () => { S.manual.desc = desc.value; });
-  kids.push(h('section', { class: 'card', id: 'web-form' },
+  kids.push(h('section', { class: 'field-block', id: 'web-form' },
     h('div', { class: 'form' },
       h('label', { class: 'label', for: 'manual-title' }, '상품 이름'), title,
       photoBlock(S.manual.imageIds, { label: '상품 사진 (선택)' }))),
-  h('section', { class: 'card extra', id: 'web-extra' },
+  h('section', { class: 'extra', id: 'web-extra' },
     h('div', { class: 'form' },
       h('label', { class: 'label', for: 'manual-price' }, '가격 (선택)'), price,
       h('p', { class: 'muted small' }, '비우면 "가격은 링크에서 확인"으로 나와요.'),
       h('label', { class: 'label', for: 'manual-desc' }, '상품 설명·특징 (선택)'), desc,
       h('p', { class: 'muted small' }, '쿠팡 상품 페이지의 설명을 붙여 넣으면 글이 그 내용을 근거로 써요.'))),
   h('div', { class: 'make-wrap' },
-    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', onclick: () => fn.onMake('manual') }, icon('sparkle', { size: 22 }), '만들기'),
+    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', onclick: () => fn.onMake('manual') }, '만들기'),
     h('p', { class: 'muted small center' }, '카드·캡션·쇼츠 대본을 한 번에 만들어요.')));
 
   const topic = h('textarea', { id: 'topic-text', class: 'input', rows: 2, placeholder: '예: 요즘 뜨는 핸디 청소기 고르는 법', 'aria-label': '주제' });
   topic.value = S.topic || '';
   topic.addEventListener('input', () => { S.topic = topic.value; updateMakeEnabled(); });
-  kids.push(h('details', { class: 'card extra', id: 'topic-start', open: !!S.topic },
+  kids.push(h('details', { class: 'extra', id: 'topic-start', open: !!S.topic },
     h('summary', null, '주제로 만들기 (상품 정보 없이)'),
     h('div', { class: 'form' },
       h('p', { class: 'muted small' }, '주제만 적으면 숫자·후기 같은 사실은 쓰지 않고 체감 표현으로만 만들어요.'),
       h('label', { class: 'label', for: 'topic-text' }, '주제'), topic,
       photoBlock(S.topicImageIds, { label: '사진 (선택)' }),
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-make-topic', onclick: () => fn.onMake('topic') }, '이 주제로 만들기'))));
-  kids.push(h('details', { class: 'card extra', id: 'shorts-start' }, h('summary', null, '쇼츠 대본으로 시작하기'), shortsStartForm()));
+  kids.push(h('details', { class: 'extra', id: 'shorts-start' }, h('summary', null, '쇼츠 대본으로 시작하기'), shortsStartForm()));
 }
 
 function shortsStartForm() {

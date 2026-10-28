@@ -21,6 +21,7 @@ export const S = {
   manual: { title: '', price: '', imageId: null, imageIds: [], desc: '' },
   topicImageIds: [], webKind: 'manual',
   mode: 'cardnews',        // 'cardnews' | 'photo' (시작 화면에서 고른 버전. 마지막 선택을 기억)
+  photoSel: { photo: null, web: null, topic: null },   // 사진 줄에서 고른 썸네일 번호
   photos: [],              // 사진 캐러셀: 올린 사진 imageId (순서 = 카드 순서)
   font: 'pretendard',      // 카드 글씨체(lib/fonts.js CARD_FONTS 의 key). carousel.font 로 들어간다
   photoStyle: 'outline',   // 사진 캐러셀 글씨 스타일
@@ -137,7 +138,7 @@ export function updateStatus() {
   const n = factIssues().length;
   const total = p.score?.total;
   chip.hidden = false;
-  chip.textContent = n ? `근거 ${n}건 · ${total ?? '-'}점` : `근거 OK · ${total ?? '-'}점`;
+  chip.textContent = `${total ?? '-'}점`;
   chip.dataset.level = n ? 'warn' : 'ok';
   chip.setAttribute('aria-label', `근거 없음 ${n}건, 저장 가능성 ${total ?? '-'}점. 누르면 근거·검수 탭을 엽니다.`);
 }

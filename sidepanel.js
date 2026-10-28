@@ -11,6 +11,7 @@ import { COUNT_OPTIONS } from './ui/labels.js';
 import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey } from './ui/start.js';
 import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs } from './ui/photo.js';
 import { decorateIcons, logoMark, icon } from './ui/icons.js';
+import { renderPreview, schedulePreview } from './ui/preview.js';
 import { openGuide, guideBand, guideSeen, markGuideSeen } from './ui/guide.js';
 import { startGenerate, regenerate, cancelStream } from './ui/stream.js';
 import { renderEdit, renderEditMeta, onCardIndexChanged, startRewrite } from './ui/tab-edit.js';
@@ -21,7 +22,7 @@ import { openExport, closeOverlay } from './ui/export.js';
 import { openHistory, openProject } from './ui/history.js';
 
 // ───────────────────────── 화면 자리 ─────────────────────────
-for (const id of ['app', 'banner', 'hero', 'modebar', 'strip', 'notices', 'decision', 'stage', 'phone', 'sheet', 'dock', 'overlay']) el[id] = document.getElementById(id);
+for (const id of ['app', 'banner', 'hero', 'modebar', 'livepreview', 'strip', 'notices', 'decision', 'stage', 'phone', 'sheet', 'dock', 'overlay']) el[id] = document.getElementById(id);
 
 const TABS = ['edit', 'review', 'caption'];
 
@@ -112,18 +113,16 @@ function renderProgress() {
   const pr = S.progress || {};
   const pct = pr.total ? Math.round(((pr.got || 0) / pr.total) * 100) : 8;
   setChildren(el.stage, h('div', { class: 'card progress-card', id: 'progress-card', role: 'status' },
-    h('div', { class: 'progress-label', id: 'progress-label' }, icon('sparkle', { size: 20, cls: 'h-ico' }), pr.total ? `${pr.label} · ${pr.got || 0}/${pr.total}` : pr.label || '만드는 중'),
+    h('div', { class: 'progress-label', id: 'progress-label' }, pr.total ? `${pr.label} · ${pr.got || 0}/${pr.total}` : pr.label || '만드는 중'),
     h('div', { class: 'progress', 'aria-hidden': 'true' }, h('div', { class: 'progress-bar', style: { width: pct + '%' } })),
-    h('p', { class: 'muted small' }, '카드가 만들어지는 대로 아래 폰 화면에 하나씩 나타나요.'),
+    
     h('button', { type: 'button', class: 'btn', id: 'btn-cancel', onclick: () => cancelStream() }, '취소')));
 }
 
 /** 시작 화면 맨 위: 히어로 문구 + 버전 고르기 */
 function renderHero() {
   if (S.phase !== 'start') { el.hero.replaceChildren(); return; }
-  setChildren(el.hero, h('span', { class: 'hero-blob', 'aria-hidden': 'true' }),
-    h('h2', { class: 'hero-title' }, '상품 사진 넣고', h('br'), h('span', { class: 'grad' }, '캐러셀 한 번에')),
-    null);
+  setChildren(el.hero, h('h2', { class: 'hero-title' }, '사진과 상품 이름만 넣으면', h('br'), '캐러셀이 10초 만에 나와요'));
 }
 
 function renderModebar() {
@@ -165,6 +164,7 @@ function render() {
   renderBanner();
   renderHero();
   renderModebar();
+  renderPreview();
   renderStrip();
   renderNotices();
   renderDecision();
@@ -227,7 +227,7 @@ async function openOptions() {
 function onCardIndex() { onCardIndexChanged(); if (S.tab === 'review' && S.phase === 'ready') renderReview(); }
 
 Object.assign(fn, {
-  render, renderStrip, renderStage, renderModebar, renderProgress, renderDecision, renderNotices, renderTab, openTab, onMake, makeFromShorts, startNew, openOptions,
+  render, renderStrip, renderStage, renderModebar, renderPreview, schedulePreview, renderProgress, renderDecision, renderNotices, renderTab, openTab, onMake, makeFromShorts, startNew, openOptions,
   regenerate, startGenerate, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, saveModePrefs, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
 });
 
