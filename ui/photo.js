@@ -9,6 +9,7 @@ import { S, fn, imageUrl } from './app.js';
 import { showError } from './errors.js';
 import { icon } from './icons.js';
 import { fontDetails, pickStartFont } from './fontpick.js';
+import { adPanel, adCfg, adFields } from './adlabel.js';
 
 export const STYLES = [
   { key: 'outline', label: '테두리', desc: '굵은 흰 글씨 + 검은 테두리' },
@@ -27,7 +28,8 @@ export async function loadModePrefs() {
     const m = await store.kvGet('panel.mode', null);
     if (m?.mode === 'photo' || m?.mode === 'cardnews') S.mode = m.mode;
     if (STYLE_LABEL[m?.style]) S.photoStyle = m.style;
-    if (typeof m?.adLabel === 'boolean') S.adLabel = m.adLabel;
+    if (m?.ad && typeof m.ad === 'object') S.ad = m.ad;
+    else if (typeof m?.adLabel === 'boolean') S.ad = { photo: { on: m.adLabel } };
     if (typeof m?.font === 'string') S.font = m.font;
   } catch { /* 기억 못 해도 기본값 */ }
 }
@@ -38,7 +40,7 @@ export function fontCard() {
 }
 
 export function saveModePrefs() {
-  store.kvSet('panel.mode', { mode: S.mode, style: S.photoStyle, adLabel: S.adLabel, font: S.font }).catch(() => {});
+  store.kvSet('panel.mode', { mode: S.mode, style: S.photoStyle, ad: S.ad, font: S.font }).catch(() => {});
 }
 
 // ───────────────────────── 작은 그림(예시·스타일 미리보기) ─────────────────────────
@@ -155,9 +157,15 @@ async function addProductPhoto(i) {
 // ───────────────────────── 시작 화면(사진 모드) ─────────────────────────
 
 function styleButtons() {
-  return h('div', { class: 'style-grid', id: 'style-picker', role: 'group', 'aria-label': '글씨 스타일' },
-    ...STYLES.map((s) => h('button', { type: 'button', class: 'style-btn', 'data-style': s.key, 'aria-pressed': String(S.photoStyle === s.key), onclick: () => { S.photoStyle = s.key; saveModePrefs(); fn.renderStage(); } },
-      stylePreview(s.key), h('span', { class: 'style-name' }, s.label))));
+  const idx = STYLES.findIndex((x) => x.key === S.photoStyle);
+  const pick = (key) => { S.photoStyle = key; saveModePrefs(); fn.renderStage(); setTimeout(() => document.querySelector(`#style-picker [data-style="${key}"]`)?.scrollIntoView({ inline: 'center', block: 'nearest' }), 30); };
+  const step = (d) => { const j = Math.min(STYLES.length - 1, Math.max(0, idx + d)); if (j !== idx) pick(STYLES[j].key); };
+  return h('div', { class: 'sample-rail' },
+    h('button', { type: 'button', class: 'btn rail-arrow', id: 'style-prev', 'aria-label': '이전 스타일', disabled: idx <= 0, onclick: () => step(-1) }, icon('chevronLeft', { size: 20 })),
+    h('div', { class: 'style-grid', id: 'style-picker', role: 'group', 'aria-label': '글씨 스타일' },
+      ...STYLES.map((s) => h('button', { type: 'button', class: 'style-btn', 'data-style': s.key, 'aria-pressed': String(S.photoStyle === s.key), onclick: () => pick(s.key) },
+        stylePreview(s.key), h('span', { class: 'style-name' }, s.label)))),
+    h('button', { type: 'button', class: 'btn rail-arrow', id: 'style-next', 'aria-label': '다음 스타일', disabled: idx >= STYLES.length - 1, onclick: () => step(1) }, icon('chevronRight', { size: 20 })));
 }
 
 function infoForm() {
@@ -189,13 +197,7 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
     photoStrip(S.photos, { key: 'photo', listId: 'photo-list', uploadId: 'btn-photo-upload', firstLabel: '커버', onAdd: uploadPhotos }),
     productPhotoPicker()));
   kids.push(h('section', { class: 'extra', id: 'photo-style' },
-    h('div', { class: 'label' }, '글씨 스타일'), styleButtons(),
-    (() => {
-      const cb = h('input', { type: 'checkbox', id: 'ad-label', checked: S.adLabel });
-      cb.addEventListener('change', () => { S.adLabel = cb.checked; saveModePrefs(); fn.renderStage(); });
-      return h('label', { class: 'check-row', for: 'ad-label' }, cb, h('span', null, '사진 왼쪽 위에 [광고] 표시'));
-    })(),
-    S.adLabel ? null : h('p', { class: 'warn-line small', id: 'ad-off-note' }, '파트너스 게시물이면 켜 두세요.')));
+    h('div', { class: 'label' }, '글씨 스타일'), styleButtons()));
   kids.push(infoForm());
   kids.push(h('div', { class: 'make-wrap' },
     h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', disabled: n < MIN_PHOTOS, onclick: () => fn.onMake() }, '만들기'),

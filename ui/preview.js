@@ -4,6 +4,7 @@ import { renderCard } from '../lib/render.js';
 import { h, debounce } from './dom.js';
 import { S, el, BRAND } from './app.js';
 import { ensureCardFont } from './fontpick.js';
+import { adCfg, adFields } from './adlabel.js';
 import { IS_WEB } from '../lib/platform.js';
 
 const SAMPLE = '상품 이름이 여기 들어가요';
@@ -40,10 +41,10 @@ function buildCarousel() {
   const name = currentName();
   const text = name || SAMPLE;
   const imageId = currentImageId();
-  const base = { type: 'sales', template: 'basic', brandColor: BRAND, accountName: S.settings?.accountName || '', hasPartnersLink: false, font: S.font || 'pretendard' };
+  const base = { type: 'sales', template: 'basic', brandColor: BRAND, accountName: S.settings?.accountName || '', hasPartnersLink: false, font: S.font || 'pretendard', ...adFields(adCfg(S.mode === 'photo' ? 'photo' : 'cardnews')) };
   if (S.mode === 'photo') {
     const lines = toLines(text);
-    return { ...base, mode: 'photo', overlayStyle: S.photoStyle || 'outline', adLabel: S.adLabel !== false,
+    return { ...base, mode: 'photo', overlayStyle: S.photoStyle || 'outline',
       cards: [{ index: 0, role: '커버', layout: 'overlay', imageSlot: 'hero', ...(imageId ? { imageId } : {}), headline: lines.join('\n'), body: '', overlay: { lines, position: 'top', size: 'xl' } }] };
   }
   return { ...base, mode: 'cardnews',

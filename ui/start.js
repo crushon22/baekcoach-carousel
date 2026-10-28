@@ -9,6 +9,7 @@ import { S, fn, el, imageUrl } from './app.js';
 import { showError } from './errors.js';
 import { modeTabs, renderPhotoStart, buildPhotoProduct, fontCard, photoStrip } from './photo.js';
 import { icon } from './icons.js';
+import { adPanel, adCfg } from './adlabel.js';
 
 const hasKey = () => !!(S.settings?.has?.geminiKey || S.settings?.devMockAI);
 
@@ -351,12 +352,20 @@ export function renderStartStage() {
   assemble(kids);
 }
 
+/** 시작 화면 옵션의 광고 표기(위치·모양·문구·크기). 실시간 미리보기에 바로 반영된다. */
+function adCard() {
+  const cfg = adCfg();
+  return h('section', { class: 'extra', id: 'ad-card' },
+    h('div', { class: 'label' }, '광고 표기'),
+    adPanel({ cfg, onChange: (patch) => { S.ad[S.mode] = { ...adCfg(), ...patch }; fn.saveModePrefs(); fn.renderStage(); } }));
+}
+
 /** 시작 화면 조립: 핵심(입력 칸 + 만들기)만 위에 두고, 나머지(.extra)는 접힌 "더 꾸미기 · 옵션" 안으로. 이어 하기는 작은 링크. */
 function assemble(kids) {
   const hasMake = kids.some((k) => k?.classList?.contains('make-wrap'));
   const main = kids.filter((k) => !k?.classList?.contains('extra'));
   const extras = kids.filter((k) => k?.classList?.contains('extra'));
-  if (hasMake) extras.push(fontCard());
+  if (hasMake) extras.push(adCard(), fontCard());
   if (extras.length) {
     const d = h('details', { class: 'more', id: 'more-options', open: !!(S.unfold || S.moreOpen) },
       h('summary', null, h('span', null, '옵션'), h('span', { class: 'more-hint' }, '글씨체 · 스타일 · 가격 · 설명')),

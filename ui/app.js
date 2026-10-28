@@ -25,7 +25,7 @@ export const S = {
   photos: [],              // 사진 캐러셀: 올린 사진 imageId (순서 = 카드 순서)
   font: 'pretendard',      // 카드 글씨체(lib/fonts.js CARD_FONTS 의 key). carousel.font 로 들어간다
   photoStyle: 'outline',   // 사진 캐러셀 글씨 스타일
-  adLabel: true,           // 사진 왼쪽 위 [광고] 표시
+  ad: {},                  // 광고 표기 설정 {cardnews:{on,position,look,text,size}, photo:{…}} (ui/adlabel.js 의 adCfg 로 읽는다)
   link: '',                // 만들기 전에 알고 있는 링크(검색 결과의 수수료 링크)
   searchResults: null,
   project: null,

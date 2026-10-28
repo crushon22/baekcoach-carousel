@@ -5,6 +5,7 @@ import { h, setChildren, toast } from './dom.js';
 import { S, fn, el, isPhoto, cards, composed, finalTags, shortsText, factIssues, cardMeta, saveNow } from './app.js';
 import { showError, errorBox, normalizeError } from './errors.js';
 import { ensureCardFont } from './fontpick.js';
+import { cfgFromCarousel, adFields, defaultAd } from './adlabel.js';
 
 const st = { manual: { price: false, order: false, click: false }, opts: { c9x16: true, c1x1: false, textless: false }, confirming: false, busy: null, done: null, error: null };
 let checks = null;
@@ -29,7 +30,11 @@ async function computeChecks() {
     { key: 'fact', ok: fi === 0, title: '근거 없는 주장 0개', detail: fi ? `🔎 ${fi}건이 남아 있어요. 완화하거나 빼거나 근거를 남겨 주세요.` : '남은 🔎가 없어요.', go: fi ? { label: '근거·검수 열기', run: () => fn.openTab('review', { scroll: true }) } : null },
     { key: 'disclosure', ok: c.text.startsWith(c.disclosure), title: '파트너스 고지 문구', detail: '캡션 첫 줄에 고지 문구가 자동으로 들어가요(끌 수 없어요).' },
     { key: 'link', ok: c.hasLink && !warn('LINK_INVALID'), title: '파트너스 링크', detail: c.hasLink ? (warn('LINK_NOT_COUPANG') ? '링크가 있지만 쿠팡 파트너스 링크가 맞는지 확인해 주세요.' : '캡션에 링크가 들어가요.') : '링크가 비어 있어요. 링크가 없으면 수수료가 생기지 않아요.', go: c.hasLink ? null : { label: '링크 넣으러 가기', run: () => fn.openTab('caption', { scroll: true }) } },
-    ...(isPhoto(p) ? [{ key: 'adlabel', ok: p.carousel.adLabel !== false || !c.hasLink, title: '[광고] 표시', detail: p.carousel.adLabel !== false ? '사진 왼쪽 위에 [광고]가 들어가요.' : (c.hasLink ? '파트너스 링크가 있는데 [광고] 표시가 꺼져 있어요. 파트너스 게시물이면 켜 두세요.' : '[광고] 표시가 꺼져 있어요(링크가 없어 괜찮아요).'), go: p.carousel.adLabel === false && c.hasLink ? { label: '[광고] 켜기', run: () => { p.carousel.adLabel = true; S.adLabel = true; fn.refreshAll?.(); fn.openExport(); } } : null }] : []),
+    (() => {
+      const ad = cfgFromCarousel(p.carousel);
+      return { key: 'adlabel', ok: ad.on || !c.hasLink, title: '광고 표기', detail: ad.on ? `카드에 "${ad.text}" 표시가 들어가요.` : (c.hasLink ? '파트너스 링크가 있는데 광고 표기가 없어요. 표시를 권장해요.' : '광고 표기가 없어요(링크가 없어 괜찮아요).'),
+        go: !ad.on && c.hasLink ? { label: '광고 표기 켜기', run: () => { Object.assign(p.carousel, adFields({ ...defaultAd('photo'), ...ad, on: true })); fn.refreshAll?.(); fn.openExport(); } } : null };
+    })(),
     { key: 'volatile', ok: !warn('VOLATILE_CLAIM'), title: '바뀔 수 있는 표현(배송·최저가)', detail: warn('VOLATILE_CLAIM')?.messageKo || '캡션에 로켓배송·최저가 같은 표현이 없어요.', go: warn('VOLATILE_CLAIM') ? { label: '캡션 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
     { key: 'overflow', ok: overflow.length === 0, title: '카드 글자 넘침', detail: overflow.length ? `${overflow.map((i) => i + 1).join('·')}번 카드의 글이 칸을 넘쳐요.` : '모든 카드의 글이 칸 안에 들어가요.', go: overflow.length ? { label: `${overflow[0] + 1}번 카드 고치기`, run: () => fn.gotoCard(overflow[0]) } : null },
     { key: 'tags', ok: tags <= 30, title: '해시태그 30개 이하', detail: tags > 30 ? `${tags}개예요. ${tags - 30}개를 줄여 주세요.` : `${tags}개예요.`, go: tags > 30 ? { label: '해시태그 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },

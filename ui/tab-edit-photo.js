@@ -13,6 +13,8 @@ import { S, fn, cards, refreshCard, refreshAll, scheduleReview, scheduleSave, im
 import { showError } from './errors.js';
 import { HOOK_LABELS, STYLE_HELP } from './labels.js';
 import { STYLES } from './photo.js';
+import { segment } from './segment.js';
+import { colorBlock, adBlock, afterDesignRender } from './designblocks.js';
 
 const POS = { top: '위', middle: '가운데', bottom: '아래' };
 const SIZE = { xl: '크게', l: '보통', m: '작게' };
@@ -123,7 +125,8 @@ export async function renderPhotoEdit(host) {
       wordsBox),
 
     fold({ id: 'placement-group', icon: 'text', title: '글 위치·크기', open: false },
-      h('div', { class: 'label' }, '위치'), seg(posOptions, ov.position, (v) => setOv({ position: v }), 'overlay-position'),
+      segment({ id: 'overlay-position', label: '글 위치', value: ov.position, onPick: (v) => setOv({ position: v }),
+        items: [{ value: 'top', icon: 'posTop', label: '위' }, ...(style === 'gradient' ? [] : [{ value: 'middle', icon: 'posMiddle', label: '가운데' }]), { value: 'bottom', icon: 'posBottom', label: '아래' }] }),
       style === 'gradient' ? h('p', { class: 'muted small' }, '그라데이션은 글이 위나 아래에만 들어가요.') : null,
       h('div', { class: 'label' }, '글씨 크기'), seg(SIZE, ov.size || 'l', (v) => setOv({ size: v }), 'overlay-size'),
       h('div', { class: 'label' }, '정렬'), seg({ center: '가운데', left: '왼쪽' }, ov.align || defaultAlign, (v) => setOv({ align: v }), 'overlay-align')),
@@ -145,20 +148,15 @@ export async function renderPhotoEdit(host) {
       ui.covers ? h('div', { class: 'covers', id: 'cover-list' }, ...ui.covers.map((c, k) => h('button', { type: 'button', class: 'cover-btn', 'data-cover': k, 'aria-label': `커버 ${k + 1}안: 글 ${POS[c.position] || c.position}`, onclick: () => applyCover(c, host) },
         h('img', { src: c.url, alt: '' }), h('span', { class: 'small' }, `글 ${POS[c.position] || c.position}`)))) : null) : null,
 
-    fold({ id: 'design-group', icon: 'palette', title: '글씨 스타일·광고 표시', open: false },
+    fold({ id: 'design-group', icon: 'palette', title: '디자인 · 색 · 광고 표기', open: false },
       h('div', { class: 'chips', id: 'style-chips', role: 'group', 'aria-label': '글씨 스타일' },
         ...STYLES.map((s) => h('button', { type: 'button', class: 'chip', 'data-style': s.key, 'aria-pressed': String(style === s.key), onclick: () => fn.setPhotoStyle(s.key) }, s.label))),
       fontDetails({ value: p.carousel.font || DEFAULT_FONT, onPick: setProjectFont, id: 'font-picker', open: !!S.fontOpen }),
-      adToggle(p, host),
-      p.carousel.adLabel === false ? h('p', { class: 'warn-line small' }, '파트너스 게시물이면 켜 두세요.') : null));
+      colorBlock({ rerender: () => renderPhotoEdit(host) }),
+      adBlock({ rerender: () => renderPhotoEdit(host) })));
   renderWords();
   fn.renderEditMeta?.();
-}
-
-function adToggle(p, host) {
-  const cb = h('input', { type: 'checkbox', id: 'ad-toggle', checked: p.carousel.adLabel !== false });
-  cb.addEventListener('change', () => { p.carousel.adLabel = cb.checked; S.adLabel = cb.checked; refreshAll(); scheduleSave(); renderPhotoEdit(host); });
-  return h('label', { class: 'check-row', for: 'ad-toggle' }, cb, h('span', null, '사진 왼쪽 위에 [광고] 표시'));
+  afterDesignRender(host);
 }
 
 // ── 사진 ──

@@ -12,6 +12,7 @@ import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, h
 import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs } from './ui/photo.js';
 import { decorateIcons, logoMark, icon } from './ui/icons.js';
 import { renderPreview, schedulePreview } from './ui/preview.js';
+import { adCfg } from './ui/adlabel.js';
 import { openGuide, guideBand, guideSeen, markGuideSeen } from './ui/guide.js';
 import { startGenerate, regenerate, cancelStream } from './ui/stream.js';
 import { renderEdit, renderEditMeta, onCardIndexChanged, startRewrite } from './ui/tab-edit.js';
@@ -174,7 +175,7 @@ function render() {
   el.sheet.classList.toggle('busy', !!S.stream);
   showDock(ready);
   const ci = document.getElementById('chat-input');
-  if (ci) ci.placeholder = isPhoto(S.project) ? '말로 고쳐요. 예: 3번 글 위로, 글씨 더 크게, 그라데이션으로' : '말로 고쳐요. 예: 3번 짧게, 베이지로';
+  if (ci) ci.placeholder = isPhoto(S.project) ? '말로 고쳐요. 예: 3번 글 위로, 광고 오른쪽 위로' : '말로 고쳐요. 예: 3번 짧게, 배경 베이지로, 광고 오른쪽 위로';
   if (ready) renderTab();
   updateStatus();
 }
@@ -188,7 +189,7 @@ async function onMake(kind) {
   if (S.mode === 'photo') {
     if (S.photos.length < MIN_PHOTOS) { toast(`사진을 ${MIN_PHOTOS}장 이상 올려 주세요.`, { kind: 'warn' }); return; }
     const pp = buildProduct();
-    await startGenerate(pp, { link: S.link || '', options: { mode: 'photo', overlayStyle: S.photoStyle, adLabel: S.adLabel } });
+    await startGenerate(pp, { link: S.link || '', options: { mode: 'photo', overlayStyle: S.photoStyle, adLabel: adCfg('photo').on } });
     return;
   }
   const product = buildProduct(IS_WEB ? S.webKind : undefined);

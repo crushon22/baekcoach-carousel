@@ -4,6 +4,7 @@ import { WHERE } from '../lib/common.js';
 import * as store from '../lib/store.js';
 import { TEMPLATES, LAYOUTS, renderCoverVariants, extractColorsFromImageId } from '../lib/render.js';
 import { fold } from './fold.js';
+import { colorBlock, adBlock, afterDesignRender } from './designblocks.js';
 import { fontDetails, setProjectFont, DEFAULT_FONT } from './fontpick.js';
 import { h, setChildren, debounce, pickImageFile, toast } from './dom.js';
 import { renderPhotoEdit, resetPhotoCardState, startRewrite as startPhotoRewrite } from './tab-edit-photo.js';
@@ -103,16 +104,18 @@ export function renderEdit() {
       ui.covers ? coverList(ui.covers) : null) : null,
 
     // 전체 디자인
-    fold({ id: 'design-group', icon: 'palette', title: '전체 디자인', open: false },
+    fold({ id: 'design-group', icon: 'palette', title: '디자인 · 색 · 광고 표기', open: false },
       fontDetails({ value: p.carousel.font || DEFAULT_FONT, onPick: setProjectFont, id: 'font-picker', open: !!S.fontOpen }),
       h('div', { class: 'label' }, '템플릿'),
       h('div', { class: 'chips', id: 'template-chips', role: 'group', 'aria-label': '템플릿' },
         ...Object.keys(TEMPLATES).map((t) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(p.carousel.template === t), 'data-template': t, onclick: () => setTemplate(t) },
           h('span', { class: 'dot', style: { background: TEMPLATES[t].bg || '#2F5BEA', borderColor: TEMPLATES[t].accent } }), TEMPLATE_LABELS[t]))),
-      h('div', { class: 'btn-row' },
+      colorBlock({ rerender: () => renderEdit(), extraAccent: h('span', { class: 'accent-tools' },
         h('button', { type: 'button', class: 'btn', id: 'btn-product-color', onclick: matchProductColor }, '제품 색으로 맞추기'),
-        p.carousel.accentColor ? h('span', { class: 'swatch-row' }, h('span', { class: 'swatch', style: { background: p.carousel.accentColor }, title: p.carousel.accentColor }), h('span', { class: 'muted small' }, '강조색')) : null)));
+        p.carousel.accentColor ? h('span', { class: 'swatch-row' }, h('span', { class: 'swatch', style: { background: p.carousel.accentColor }, title: p.carousel.accentColor })) : null) }),
+      adBlock({ rerender: () => renderEdit() })));
   renderEditMeta();
+  afterDesignRender(host);
 }
 
 /** 글자 넘침 ⚠️ (현재 카드만, 작은 크기로 그려 meta 만 확인) */

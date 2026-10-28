@@ -31,6 +31,17 @@ const PATHS = {
   arrowRight: '<path d="M5 12h14M13.5 6.5L19 12l-5.5 5.5"/>',
   chevron: '<path d="M6 9l6 6 6-6"/>',
   sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  adNone: '<circle cx="12" cy="12" r="8.5"/><path d="M6 18L18 6"/>',
+  adTL: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><rect x="6.5" y="7.5" width="6" height="3" rx="1.2"/>',
+  adTR: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><rect x="11.5" y="7.5" width="6" height="3" rx="1.2"/>',
+  adBL: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><rect x="6.5" y="13.5" width="6" height="3" rx="1.2"/>',
+  adBR: '<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><rect x="11.5" y="13.5" width="6" height="3" rx="1.2"/>',
+  posTop: '<path d="M5 4.5h14"/><path d="M12 20V9M7.5 13.5L12 9l4.5 4.5"/>',
+  posMiddle: '<path d="M5 12h14"/><path d="M12 4.5v4M9.5 6.5L12 4.5l2.5 2M12 19.5v-4M9.5 17.5L12 19.5l2.5-2"/>',
+  posBottom: '<path d="M5 19.5h14"/><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/>',
+  chevronLeft: '<path d="M15 6l-6 6 6 6"/>',
+  chevronRight: '<path d="M9 6l6 6-6 6"/>',
+  undo: '<path d="M9 7L4.5 11.5 9 16"/><path d="M5 11.5h9a5 5 0 0 1 0 10h-3"/>',
   arrowLeft: '<path d="M19 12H5M10.5 6.5L5 12l5.5 5.5"/>',
 };
 

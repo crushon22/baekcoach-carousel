@@ -29,7 +29,7 @@ function steps() {
     { id: 'step-1', icon: 'key', mini: 'key', title: '설정에서 Gemini 키 넣기', text: 'aistudio.google.com/apikey 에서 결제 없는 새 프로젝트로 무료 키를 만들어 설정에 붙여넣고 "키 연결 확인"을 눌러요.' },
     { id: 'step-2', icon: 'cards', mini: 'mode', title: '버전 고르기', text: '카드뉴스(글 카드) 또는 사진 캐러셀(사진 위에 글)을 골라요.' },
     { id: 'step-3', icon: 'photo', mini: 'make', title: '상품 정보·사진 넣고 만들기', text: photoWord },
-    { id: 'step-4', icon: 'pen', mini: 'edit', title: '카드 고치기', text: '카드 편집 탭에서 글을 고치거나, 아래 입력창에 말로 요청해요. 예: "3번 짧게", "베이지로", "3번 글 위로".' },
+    { id: 'step-4', icon: 'pen', mini: 'edit', title: '카드 고치기', text: '카드 편집 탭에서 글을 고치거나, 아래 입력창에 말로 요청해요. 예: "3번 짧게", "배경 베이지로", "광고 오른쪽 위로", "3번 글 위로".' },
     { id: 'step-5', icon: 'search', mini: 'review', title: '근거·검수 확인', text: '🔎가 붙은 문장은 근거가 없어요. 완화하거나 빼거나, 직접 확인했다면 근거를 남겨요.' },
     { id: 'step-6', icon: 'link', mini: 'link', title: '파트너스 링크 붙여넣기', text: '캡션·쇼츠 탭에 파트너스 링크를 붙여넣으면 캡션 첫 줄에 고지 문구가 자동으로 들어가요.' },
     { id: 'step-7', icon: 'download', mini: 'export', title: '내보내기', text: '내보내기에서 체크리스트를 확인하고 zip을 받아 인스타에 올려요.' },

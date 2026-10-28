@@ -424,3 +424,48 @@ pre.final-caption { border-radius: var(--r-input); }
 
 #manual-title { min-height: 44px; }
 textarea.input#manual-title { resize: none; }
+
+/* ─ 아이콘 세그먼트 · 견본 줄 · 색 편집 · 광고 표기 ─ */
+.seg-group { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 0; }
+.seg-label { color: var(--sub); font-size: 16px; font-weight: 500; }
+.seg-track { display: inline-flex; align-self: flex-start; gap: 0; padding: 4px; background: var(--track); border-radius: var(--pill); }
+.seg-btn { min-width: 44px; min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--pill); background: transparent; color: var(--sub); font: inherit; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background .12s, color .12s; }
+.seg-btn .ico { margin: 0; }
+.seg-btn:hover { color: var(--ink); }
+.seg-btn[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: var(--shadow-1); font-weight: 700; }
+.design-block { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.design-block:first-of-type { border-top: 0; }
+.ad-panel { display: flex; flex-direction: column; }
+.ad-looks { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px; }
+.ad-look { flex: 0 0 112px; display: flex; flex-direction: column; gap: 6px; padding: 6px; border: 1px solid var(--line); border-radius: var(--r-input); background: #fff; cursor: pointer; text-align: center; font: inherit; }
+.ad-look[aria-pressed="true"] { border-color: var(--blue); background: var(--blue-soft); }
+.ad-look-name { color: var(--ink); font-size: 16px; font-weight: 500; }
+.ad-look[aria-pressed="true"] .ad-look-name { font-weight: 700; }
+.ad-sample-img { display: flex; align-items: center; justify-content: center; width: 100%; height: 64px; border-radius: 6px; overflow: hidden; background: linear-gradient(160deg, #7dd3fc 0%, #fde68a 55%, #fb923c 100%); }
+.ad-sample-img img, .ad-sample-img canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ad-fb { color: #fff; font-weight: 700; font-size: 16px; padding: 2px 8px; border-radius: 4px; }
+.ad-fb-box { background: rgba(15, 23, 42, .7); }
+.ad-fb-shadow { text-shadow: 0 2px 5px rgba(0, 0, 0, .9); }
+.ad-fb-plain { color: #fff; }
+.ad-fb-outline { border: 1.5px solid #fff; }
+.sample-rail { display: flex; align-items: center; gap: 4px; }
+.sample-rail .style-grid { display: flex; flex: 1 1 auto; min-width: 0; overflow-x: auto; scroll-snap-type: x mandatory; gap: 8px; margin: 0; }
+.sample-rail .style-btn { flex: 0 0 132px; scroll-snap-align: center; }
+.rail-arrow { flex: none; min-width: 44px; padding: 0; border-radius: 50%; }
+.rail-arrow .ico { margin: 0; }
+/* 색 줄 */
+.color-panel { display: flex; flex-direction: column; gap: 12px; }
+.color-row { display: flex; flex-direction: column; gap: 2px; }
+.color-head { display: flex; align-items: center; gap: 10px; }
+.color-now { display: inline-flex; align-items: center; gap: 6px; color: var(--sub); font-size: 16px; }
+.color-warn { color: var(--warn); font-weight: 700; font-size: 16px; }
+.color-rail { display: flex; align-items: center; gap: 2px; overflow-x: auto; padding: 0 0 2px; }
+.swatch-btn { flex: none; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; }
+.swatch-dot { width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(15, 23, 42, .18); display: inline-block; }
+.swatch-dot.sm { width: 18px; height: 18px; }
+.swatch-btn[aria-pressed="true"] .swatch-dot { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--blue); }
+.swatch-custom { flex: none; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--body); font-weight: 500; position: relative; cursor: pointer; }
+.swatch-custom .ico { margin: 0; }
+.color-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.accent-tools { flex: none; display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; }
+.accent-tools .btn { white-space: nowrap; }
