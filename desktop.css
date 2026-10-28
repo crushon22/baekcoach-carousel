@@ -4,6 +4,10 @@
    색: 흰 바탕·옅은 회색 선·검은 주 버튼, 파랑은 선택·포커스 표시에만. 글씨: Pretendard UI 하나(제목 700, 본문 500).
    크기 규칙은 그대로: 글자 16px 이상, 누르는 곳 44px 이상. */
 
+/* PC 웹 전용 굵기: 보통(400)·중간(600). 쓰일 때만 받는다(휴대폰·확장은 500/700 만) */
+@font-face { font-family: "Pretendard UI"; font-weight: 400; font-display: swap; src: url("fonts/Pretendard-Regular-ui.woff2") format("woff2"); }
+@font-face { font-family: "Pretendard UI"; font-weight: 600; font-display: swap; src: url("fonts/Pretendard-SemiBold-ui.woff2") format("woff2"); }
+
 @media (min-width: 1040px) {
   html.web {
     --d-ink: #0A0A0A; --d-body: #3F3F46; --d-sub: #71717A; --d-line: #E4E4E7;
@@ -11,8 +15,6 @@
     --ink: var(--d-ink); --body: var(--d-body); --sub: var(--d-sub); --muted: var(--d-sub); --line: var(--d-line);
     --font-cute: "Pretendard UI", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   }
-  html.web .guide-slide-title, html.web .mock-title { font-weight: 700 !important; letter-spacing: -0.025em !important; }
-  html.web .guide-tab, html.web .faq > summary { font-weight: 600 !important; }
   html.web body { background: #fff; }
 
   /* 글씨: 귀여운 제목 글씨(주아) 대신 Pretendard UI */
@@ -22,9 +24,13 @@
   html.web .status-chip, html.web .strip-title, html.web .sheet-head, html.web .guide-step-text strong {
     font-family: "Pretendard UI", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif !important; letter-spacing: -0.01em !important;
   }
-  html.web h1, html.web h2, html.web h3, html.web .hero-title, html.web .brand-text, html.web .sheet-head, html.web .guide-title { font-weight: 700 !important; letter-spacing: -0.025em !important; }
-  html.web .btn-primary, html.web .label, html.web .fold > summary, html.web .mode-tab, html.web .tabs [role=tab][aria-selected="true"], html.web .status-chip, html.web .decide-chip { font-weight: 600 !important; }
-  html.web .tabs [role=tab] { font-weight: 500 !important; }
+
+  /* 굵기: 본문 400 · 버튼·라벨·탭 500 · 제목 600. 700 은 쓰지 않는다(폰 미리보기 안은 인스타 모양 그대로) */
+  html.web body { font-size: 16px; font-weight: 400; }
+  html.web :is(.btn, .chip, .tag, .label, summary, .fold > summary, .chip-v, .decide-chip, .status-chip, .mode-tab, .tabs [role=tab], .option-k, .option-v, .seg-label, .help-btn, .guide-tab, .faq > summary, th, strong, b, h4, .count, .card-nav-title strong, .font-name, .style-name, .variant-head strong, .band-link):not(.bcpf *) { font-weight: 500 !important; }
+  html.web :is(h1, h2, h3, .hero-title, .brand-text, .sheet-head h2, .guide-title, .guide-slide-title, .mock-title, .tabs [role=tab][aria-selected="true"], .mode-tab[aria-selected="true"]):not(.bcpf *) { font-weight: 600 !important; letter-spacing: -0.02em !important; }
+  html.web .chip-k, html.web .muted, html.web .hint { font-weight: 400; }
+  html.web .label { color: var(--d-body); }
 
   /* ── 왼쪽 메뉴 ── */
   html.web .topbar {
@@ -78,7 +84,7 @@
   html.web body[data-phase="start"] #app > #livepreview { grid-column: 2; grid-row: 1 / span 12; position: sticky; top: 40px; align-self: start; padding: 20px; background: var(--d-canvas); border-radius: 20px; }
   html.web body[data-phase="start"] .preview-frame { max-width: 360px; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.08); border-radius: 14px; }
   html.web body[data-phase="start"] #hero { padding: 0; }
-  html.web body[data-phase="start"] .hero-title { font-size: 34px; line-height: 1.3; color: var(--d-ink); margin: 0; }
+  html.web body[data-phase="start"] .hero-title { font-size: 30px; line-height: 1.35; color: var(--d-ink); margin: 0; }
   html.web body[data-phase="start"] #modebar { display: flex; flex-direction: column; gap: 16px; }
   html.web .guide-band { background: #fff; border-color: var(--d-line); border-radius: 12px; }
   /* 카드뉴스 | 사진 캐러셀: 작은 알약 스위치 */
