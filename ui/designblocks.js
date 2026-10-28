@@ -2,7 +2,7 @@
 import { h } from './dom.js';
 import { S, refreshAll, scheduleSave } from './app.js';
 import { colorPanel, fillContrastWarnings } from './coloredit.js';
-import { adPanel, adFields, cfgFromCarousel } from './adlabel.js';
+import { adPanel, adFields, cfgFromCarousel, adContrastLine } from './adlabel.js';
 
 /** 색 묶음. extraAccent: 카드뉴스 강조 줄 앞에 둘 노드(제품 색으로 맞추기) */
 export function colorBlock({ extraAccent, rerender }) {
@@ -29,7 +29,6 @@ export function adBlock({ rerender }) {
 export async function afterDesignRender(root) {
   const low = await fillContrastWarnings(root);
   const ad = root.querySelector('#ad-panel');
-  if (ad && low.has('adLabel') && !ad.querySelector('#ad-contrast') && cfgFromCarousel(S.project.carousel).on) {
-    ad.append(h('p', { class: 'warn-line small', id: 'ad-contrast' }, '⚠️ 이 사진에선 잘 안 보여요 — 바탕 상자를 권해요.'));
-  }
+  const cfg = cfgFromCarousel(S.project.carousel);
+  if (ad && low.has('adLabel') && !ad.querySelector('#ad-contrast') && cfg.on) ad.append(adContrastLine(cfg));
 }

@@ -49,7 +49,7 @@ function row(c, group, key, label, { onPick, extra }) {
     ...presets().map((p) => h('button', { type: 'button', class: 'swatch-btn', 'data-color': p.toUpperCase(), 'aria-pressed': String(p.toUpperCase() === String(cur).toUpperCase()), 'aria-label': `${label} ${p}`, onclick: () => onPick(p.toUpperCase()) }, h('span', { class: 'swatch-dot', style: { background: p } }))),
     h('label', { class: 'swatch-custom' }, icon('palette', { size: 18 }), h('span', null, '직접'), input));
   return h('div', { class: 'color-row', 'data-key': key },
-    h('div', { class: 'color-head' }, h('span', { class: 'seg-label' }, label), h('span', { class: 'color-now' }, h('span', { class: 'swatch-dot sm', style: { background: cur } }), h('span', null, String(cur).toUpperCase())), h('span', { class: 'color-warn', 'data-for': WARN_KEY[key] || key, hidden: true }, '⚠️ 글씨가 잘 안 보일 수 있어요')),
+    h('div', { class: 'color-head' }, h('span', { class: 'seg-label' }, label), h('span', { class: 'color-now' }, h('span', { class: 'swatch-dot sm', style: { background: cur } }), h('span', null, String(cur).toUpperCase())), h('span', { class: 'color-warn', 'data-for': WARN_KEY[key] || key, hidden: true }, key === 'accent' ? '⚠️ 배경과 비슷해서 강조가 안 보여요' : '⚠️ 글씨가 잘 안 보일 수 있어요')),
     rail);
 }
 

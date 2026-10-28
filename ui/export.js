@@ -19,9 +19,13 @@ async function computeChecks() {
   const p = S.project;
   const c = composed();
   const overflow = [];
+  const lowCards = [];
+  const lowKinds = new Set();
   for (let i = 0; i < cards().length; i++) {
     const m = await cardMeta(i);
     if (m?.overflow) overflow.push(i);
+    const low = (m?.lowContrast || []).filter((k) => LOW_NAME[k]);
+    if (low.length) { lowCards.push(i); low.forEach((k) => lowKinds.add(k)); }
   }
   const warn = (code) => c.warnings.find((w) => w.code === code);
   const fi = factIssues().length;
@@ -37,9 +41,24 @@ async function computeChecks() {
     })(),
     { key: 'volatile', ok: !warn('VOLATILE_CLAIM'), title: '바뀔 수 있는 표현(배송·최저가)', detail: warn('VOLATILE_CLAIM')?.messageKo || '캡션에 로켓배송·최저가 같은 표현이 없어요.', go: warn('VOLATILE_CLAIM') ? { label: '캡션 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
     { key: 'overflow', ok: overflow.length === 0, title: '카드 글자 넘침', detail: overflow.length ? `${overflow.map((i) => i + 1).join('·')}번 카드의 글이 칸을 넘쳐요.` : '모든 카드의 글이 칸 안에 들어가요.', go: overflow.length ? { label: `${overflow[0] + 1}번 카드 고치기`, run: () => fn.gotoCard(overflow[0]) } : null },
+    { key: 'contrast', ok: lowCards.length === 0, title: '잘 보이는 글씨 색',
+      detail: lowCards.length
+        ? `${lowCards.length === cards().length ? '모든 카드' : lowCards.map((i) => i + 1).join('·') + '번 카드'}에서 ${Object.keys(LOW_NAME).filter((k) => lowKinds.has(k)).map((k) => LOW_NAME[k]).join('·')} 색이 배경과 비슷해서 잘 안 보일 수 있어요.`
+        : '글씨와 배경 색이 충분히 달라요.',
+      go: lowCards.length ? { label: '색 고치러 가기', run: () => openDesign() } : null },
     { key: 'tags', ok: tags <= 30, title: '해시태그 30개 이하', detail: tags > 30 ? `${tags}개예요. ${tags - 30}개를 줄여 주세요.` : `${tags}개예요.`, go: tags > 30 ? { label: '해시태그 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
   ];
   return { items, overflow };
+}
+
+// 렌더러 meta.lowContrast 값 → 사람 말
+const LOW_NAME = { headline: '제목', body: '본문', accent: '강조색', overlay: '사진 위 글씨', adLabel: '광고 표기' };
+
+/** 결과 화면 "디자인 · 색 · 광고 표기"를 펼치고 그쪽으로 스크롤 */
+function openDesign() {
+  closeOverlay();
+  fn.openTab('edit', { scroll: true });
+  setTimeout(() => { const d = document.getElementById('design-group'); if (d) { d.open = true; d.scrollIntoView({ block: 'start', behavior: 'smooth' }); } }, 80);
 }
 
 const MANUAL = [
