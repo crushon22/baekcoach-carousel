@@ -49,6 +49,7 @@ function makeHandler(mode, t0, part) {
         fn.renderNotices?.();
         setProgress('카드를 쓰는 중', 0, data.count);
       } else if (event === 'card') {
+        markGenerated(data.card);
         p.carousel.cards[data.index] = data.card;
         const done = cards().filter(Boolean).length;
         const painted = S.pf ? S.pf.setCard(data.index, data.card) : null;
@@ -83,8 +84,14 @@ function makeHandler(mode, t0, part) {
   };
 }
 
+/** 시작 화면에서 AI 로 바꾼 사진(S.genImages)이 들어간 카드는 연출 이미지로 표시한다 */
+function markGenerated(card) {
+  if (card?.imageId && S.genImages?.has(card.imageId)) card.imageIsGenerated = true;
+}
+
 function finishWith(done, prev, { fresh = false } = {}) {
   const project = done;
+  (project.carousel?.cards || []).forEach(markGenerated);
   // 패널이 따로 들고 있던 값 보존
   // 처음 만들 때는 패널이 아는 링크(검색 결과의 수수료 링크)를, 다시 만들 때는 ai.regenerate 가 유지해 돌려준 link 를 쓴다
   project.link = fresh ? (prev.link || '') : (done.link || '');

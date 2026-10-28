@@ -15,6 +15,7 @@ import { HOOK_LABELS, STYLE_HELP } from './labels.js';
 import { STYLES } from './photo.js';
 import { segment } from './segment.js';
 import { colorBlock, adBlock, afterDesignRender } from './designblocks.js';
+import { openImageTool } from './imagetools.js';
 
 const POS = { top: '위', middle: '가운데', bottom: '아래' };
 const SIZE = { xl: '크게', l: '보통', m: '작게' };
@@ -104,6 +105,21 @@ export async function renderPhotoEdit(host) {
   const posOptions = style === 'gradient' ? { top: POS.top, bottom: POS.bottom } : POS;
   const defaultAlign = style === 'gradient' ? 'left' : 'center';
   const setOv = (patch) => { Object.assign(overlayOf(card), patch); refreshCard(i); scheduleSave(); scheduleReview(); renderPhotoEdit(host); };
+  const setFit = (patch) => { Object.assign(card, patch); if (card.photoFit === 'cover') delete card.photoFit; if (card.photoFocus === 'center') delete card.photoFocus; refreshCard(i); scheduleSave(); scheduleReview(); renderPhotoEdit(host); };
+  // 사진이 카드(4:5)보다 가로로 길면 왼쪽·오른쪽, 세로로 길면 위·아래가 잘린다 → 보이는 곳 고르기 이름을 맞춘다
+  const focusBox = h('div', { id: 'photo-focus-box' });
+  if (card.imageId && card.photoFit !== 'contain') {
+    imageUrl(card.imageId).then((u) => {
+      if (!u) return;
+      const im = new Image();
+      im.onload = () => {
+        const wide = im.naturalWidth / im.naturalHeight > 0.8;
+        setChildren(focusBox, h('div', { class: 'label' }, '보이는 곳'),
+          seg(wide ? { start: '왼쪽', center: '가운데', end: '오른쪽' } : { start: '위', center: '가운데', end: '아래' }, card.photoFocus || 'center', (v) => setFit({ photoFocus: v }), 'photo-focus'));
+      };
+      im.src = u;
+    });
+  }
 
   setChildren(host,
     h('div', { class: 'card-nav' },
@@ -133,7 +149,13 @@ export async function renderPhotoEdit(host) {
 
     fold({ id: 'photo-group', icon: 'photo', title: '이 카드 사진', open: false },
       photoPicker(card, host),
-      h('button', { type: 'button', class: 'btn btn-block', id: 'btn-photo-replace', onclick: () => replacePhoto(host) }, '내 사진으로 바꾸기')),
+      card.imageId ? h('div', { class: 'label' }, '사진 맞춤') : null,
+      card.imageId ? seg({ cover: '꽉 채우기', contain: '전체 보기' }, card.photoFit || 'cover', (v) => setFit({ photoFit: v }), 'photo-fit') : null,
+      card.photoFit === 'contain' ? h('p', { class: 'muted small' }, '사진이 잘리지 않게 통째로 보여 주고, 남는 곳은 같은 사진을 흐리게 깔아요.') : focusBox,
+      h('div', { class: 'btn-row' },
+        h('button', { type: 'button', class: 'btn grow', id: 'btn-photo-replace', onclick: () => replacePhoto(host) }, '내 사진으로 바꾸기'),
+        h('button', { type: 'button', class: 'btn grow', id: 'btn-photo-transform', disabled: !card.imageId, onclick: () => transformPhoto(host) }, 'AI로 사진 바꾸기')),
+      card.imageIsGenerated ? h('p', { class: 'muted small', id: 'photo-gen-note' }, '지금 사진: AI로 바꾼 연출 이미지 (카드에 표시가 붙어요)') : null),
 
     fold({ id: 'rewrite-group', icon: 'sparkle', title: '다시 쓰기', open: true },
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-rewrite', disabled: !!ui.busy, onclick: () => rewrite(host) }, ui.busy === 'rewrite' ? '3가지로 쓰는 중…' : '다시 쓰기 3안 보기'),
@@ -164,7 +186,7 @@ function photoPicker(card, host) {
   const ids = [...new Set([...(S.project.input?.imageIds || []), ...cards().map((c) => c?.imageId).filter(Boolean)])];
   const row = h('div', { class: 'thumbs', id: 'photo-thumbs' });
   ids.forEach((id) => {
-    const b = h('button', { type: 'button', class: 'thumb-btn', 'aria-pressed': String(card.imageId === id), 'aria-label': '이 사진 쓰기', onclick: () => { card.imageId = id; delete card.imageIsGenerated; refreshCard(S.cardIndex); scheduleSave(); renderPhotoEdit(host); } }, h('span', { class: 'thumb-empty' }, '…'));
+    const b = h('button', { type: 'button', class: 'thumb-btn', 'aria-pressed': String(card.imageId === id), 'aria-label': '이 사진 쓰기', onclick: () => { const gen = S.genImages?.has(id) || cards().some((c) => c?.imageId === id && c.imageIsGenerated); card.imageId = id; if (gen) card.imageIsGenerated = true; else delete card.imageIsGenerated; refreshCard(S.cardIndex); scheduleSave(); renderPhotoEdit(host); } }, h('span', { class: 'thumb-empty' }, '…'));
     imageUrl(id).then((u) => { if (u) b.replaceChildren(h('img', { src: u, alt: '' })); });
     row.append(b);
   });
@@ -182,6 +204,13 @@ async function replacePhoto(host) {
     refreshCard(S.cardIndex); scheduleSave(); renderPhotoEdit(host);
     toast('이 카드의 사진을 바꿨어요.');
   } catch (e) { showError(e); }
+}
+
+function transformPhoto(host) {
+  const i = S.cardIndex;
+  const c = cur();
+  openImageTool({ imageId: c?.imageId, aspect: '4:5', productTitle: S.project.input?.title, projectId: S.project.id || undefined,
+    onUse: (id) => { const card = cards()[i]; if (!card) return; card.imageId = id; card.imageIsGenerated = true; S.genImages.add(id); refreshCard(i); scheduleSave(); if (i === S.cardIndex) renderPhotoEdit(host); } });
 }
 
 // ── 다시 쓰기 3안 ──
@@ -209,7 +238,7 @@ function rewriteList(rw, host) {
 function applyVariant(index, v, host) {
   const old = cards()[index];
   const nc = { ...v.card, index };
-  for (const k of ['layout', 'imageSlot', 'imageId', 'imageIsGenerated']) { if (old[k] !== undefined) nc[k] = old[k]; else delete nc[k]; }
+  for (const k of ['layout', 'imageSlot', 'imageId', 'imageIsGenerated', 'photoFit', 'photoFocus']) { if (old[k] !== undefined) nc[k] = old[k]; else delete nc[k]; }
   S.project.carousel.cards[index] = syncOverlay(nc);
   ui.rewrite = null; ui.draft = null;
   refreshCard(index); scheduleReview(); scheduleSave(); renderPhotoEdit(host);

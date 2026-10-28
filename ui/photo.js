@@ -10,6 +10,7 @@ import { showError } from './errors.js';
 import { icon } from './icons.js';
 import { fontDetails, pickStartFont } from './fontpick.js';
 import { adPanel, adCfg, adFields } from './adlabel.js';
+import { openImageTool } from './imagetools.js';
 
 export const STYLES = [
   { key: 'outline', label: '테두리', desc: '굵은 흰 글씨 + 검은 테두리' },
@@ -118,8 +119,16 @@ export function photoStrip(list, { key, listId, uploadId, firstLabel = '커버',
   const actions = sel !== null && list[sel] ? h('div', { class: 'photo-actions', id: `${listId}-actions` },
     h('button', { type: 'button', class: 'btn', 'data-act': 'up', disabled: sel === 0, onclick: () => move(list, sel, -1, key) }, icon('arrowLeft', { size: 18 }), '앞으로'),
     h('button', { type: 'button', class: 'btn', 'data-act': 'down', disabled: sel === list.length - 1, onclick: () => move(list, sel, 1, key) }, '뒤로', icon('arrowRight', { size: 18 })),
-    h('button', { type: 'button', class: 'btn', 'data-act': 'remove', onclick: () => { list.splice(sel, 1); S.photoSel[key] = null; fn.renderStage(); } }, '빼기')) : null;
+    h('button', { type: 'button', class: 'btn', 'data-act': 'remove', onclick: () => { list.splice(sel, 1); S.photoSel[key] = null; fn.renderStage(); } }, '빼기'),
+    h('button', { type: 'button', class: 'btn', 'data-act': 'transform', onclick: () => transformListPhoto(list, sel) }, icon('sparkle', { size: 18 }), 'AI로 바꾸기')) : null;
   return h('div', { class: 'photo-strip' }, row, actions);
+}
+
+/** 사진 줄의 한 장을 AI 로 바꾼다. 바꾼 사진은 같은 자리에 들어가고, 만들 때 그 카드에 "연출 이미지" 표시가 붙는다(S.genImages). */
+function transformListPhoto(list, i) {
+  const id = list[i];
+  openImageTool({ imageId: id, aspect: '4:5', productTitle: (S.manual.title || '').trim() || S.rec?.product?.title,
+    onUse: (nid) => { const at = list.indexOf(id); if (at < 0) return; list[at] = nid; (S.genImages ||= new Set()).add(nid); fn.renderStage(); } });
 }
 
 /** 확장: 쿠팡 상품 사진 골라 넣기 */
@@ -195,6 +204,7 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
     pageProduct ? null : title,
     h('div', { class: 'label label-row' }, h('span', null, '사진'), h('span', { class: 'muted small', id: 'photo-count' }, `${n}장 · 2~${MAX_PHOTOS}장`)),
     photoStrip(S.photos, { key: 'photo', listId: 'photo-list', uploadId: 'btn-photo-upload', firstLabel: '커버', onAdd: uploadPhotos }),
+    h('p', { class: 'muted small', id: 'photo-drop-hint' }, '사진을 끌어다 놓거나 붙여 넣기(Ctrl+V · ⌘V)로도 넣을 수 있어요. 사진을 누르면 AI로 바꿀 수 있어요.'),
     productPhotoPicker()));
   kids.push(h('section', { class: 'extra', id: 'photo-style' },
     h('div', { class: 'label' }, '글씨 스타일'), styleButtons()));

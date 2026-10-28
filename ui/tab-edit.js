@@ -5,6 +5,7 @@ import * as store from '../lib/store.js';
 import { TEMPLATES, LAYOUTS, renderCoverVariants, extractColorsFromImageId } from '../lib/render.js';
 import { fold } from './fold.js';
 import { colorBlock, adBlock, afterDesignRender } from './designblocks.js';
+import { openImageTool } from './imagetools.js';
 import { fontDetails, setProjectFont, DEFAULT_FONT } from './fontpick.js';
 import { h, setChildren, debounce, pickImageFile, toast } from './dom.js';
 import { renderPhotoEdit, resetPhotoCardState, startRewrite as startPhotoRewrite } from './tab-edit-photo.js';
@@ -87,6 +88,7 @@ export function renderEdit() {
       ui.aiOpen ? aiPanel(card) : null,
       card.imageId ? h('div', { class: 'btn-row' },
         h('span', { class: 'muted small grow' }, card.imageIsGenerated ? '지금 사진: AI가 만든 연출 이미지 (카드에 표시가 붙어요)' : '지금 사진이 들어 있어요'),
+        h('button', { type: 'button', class: 'btn', id: 'btn-photo-transform', onclick: transformPhoto }, 'AI로 바꾸기'),
         h('button', { type: 'button', class: 'btn', id: 'btn-photo-remove', onclick: removePhoto }, '사진 빼기')) : h('p', { class: 'muted small' }, '이 카드에는 사진이 없어요.')),
 
     // 다시 쓰기
@@ -193,6 +195,12 @@ async function uploadForCard() {
     const id = await store.putImage(file, { kind: 'upload', projectId: S.project.id || undefined });
     usePhoto(id);
   } catch (e) { showError(e); }
+}
+
+function transformPhoto() {
+  const c = cur();
+  openImageTool({ imageId: c?.imageId, aspect: c?.layout === 'split' ? '1:1' : '4:5', productTitle: S.project.input?.title, projectId: S.project.id || undefined,
+    onUse: (id) => usePhoto(id, { generated: true }) });
 }
 
 function removePhoto() {

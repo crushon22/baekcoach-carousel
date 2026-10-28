@@ -21,6 +21,7 @@ import { renderCaption } from './ui/tab-caption.js';
 import { initDock, showDock, loadChat, renderChatLog } from './ui/dock.js';
 import { openExport, closeOverlay } from './ui/export.js';
 import { openHistory, openProject } from './ui/history.js';
+import { initDropIn } from './ui/dropin.js';
 
 // ───────────────────────── 화면 자리 ─────────────────────────
 for (const id of ['app', 'banner', 'hero', 'modebar', 'livepreview', 'strip', 'notices', 'decision', 'stage', 'phone', 'sheet', 'dock', 'overlay']) el[id] = document.getElementById(id);
@@ -277,6 +278,7 @@ async function boot() {
   document.getElementById('status-chip').addEventListener('click', () => { if (S.phase === 'ready') openTab('review', { scroll: true }); });
   document.querySelectorAll('.tabs [role=tab]').forEach((b) => b.addEventListener('click', () => openTab(b.dataset.tab)));
   el.overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOverlay(); });
+  initDropIn();
 
   window.addEventListener('error', (e) => showError(e.error || e.message));
   window.addEventListener('unhandledrejection', (e) => { if (e.reason?.code !== 'CANCELLED') showError(e.reason); });
