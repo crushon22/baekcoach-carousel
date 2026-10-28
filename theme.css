@@ -469,3 +469,16 @@ textarea.input#manual-title { resize: none; }
 .color-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .accent-tools { flex: none; display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; }
 .accent-tools .btn { white-space: nowrap; }
+
+/* ───── 귀여운 앱 글씨(2026-10-28 사용자 요청, 비교안 A) ─────
+   제목·버튼·탭·라벨 = 주아(동글동글, 굵기 한 가지라 400 으로 — 가짜 굵게 방지), 본문·입력·설명 = Pretendard UI(가독성). */
+@font-face { font-family: "BC UI Cute"; font-display: swap; src: url("fonts/Jua-ko.woff2") format("woff2"); unicode-range: U+1100-11FF, U+3000-303F, U+3130-318F, U+A960-A97F, U+AC00-D7AF, U+D7B0-D7FF, U+FF00-FFEF; }
+@font-face { font-family: "BC UI Cute"; font-display: swap; src: url("fonts/Jua-latin.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+2000-206F, U+20AC, U+2122, U+2212; }
+:root { --font-cute: "BC UI Cute", "Pretendard UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+h1, h2, h3, .hero-title, .guide-title, .guide-h, .qs-title, .brand-text, .h1-sub,
+.mode-tab, .tabs [role=tab], .btn-primary, .label, .fold > summary, .seg-label,
+.decide-chip, .pill-badge, .band-head, .band-txt, .status-chip, .strip-title,
+#options h1, #options h2, .sheet-head, .guide-step-text strong {
+  font-family: var(--font-cute) !important; font-weight: 400 !important; letter-spacing: 0 !important;
+}
+.mode-tab[aria-selected="true"], .tabs [role=tab][aria-selected="true"] { font-weight: 400 !important; }
