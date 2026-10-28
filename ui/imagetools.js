@@ -112,7 +112,7 @@ async function run() {
     const r = await request('image.transform', {
       imageId: st.src, kind: st.kind, option: st.option, extra: st.extra, aspect: st.opts?.aspect || '4:5',
       productTitle: st.opts?.productTitle, projectId: st.opts?.projectId,
-    }, { timeoutMs: 150000 });
+    }, { timeoutMs: 200000 }); // GPT 이미지는 서비스워커가 150초까지 기다린다 → 패널은 그보다 길게
     if (r.fallback || !r.imageId) st.fallback = { messageKo: r.messageKo, promptKo: r.promptKo };
     else st.result = { imageId: r.imageId, model: r.model };
   } catch (e) { showError(e); }

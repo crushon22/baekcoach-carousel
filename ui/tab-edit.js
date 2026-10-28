@@ -230,7 +230,7 @@ async function makeAiImage() {
       purpose: ref ? 'product' : 'background', chips: [...ui.chips], referenceImageId: ref || undefined,
       category: p.plan?.category, productTitle: p.input?.title || p.input?.topic, facts: (p.facts || []).slice(0, 6).map((f) => ({ claim: f.claim })),
       cardIndex: i, projectId: p.id || undefined,
-    });
+    }, { timeoutMs: 200000 }); // GPT 이미지는 서비스워커가 150초까지 기다린다 → 패널은 그보다 길게
     ui.busy = '';
     if (r.fallback === 'template' || !r.imageId) { ui.aiNote = r.messageKo || '사진을 만들지 못해 템플릿 배경으로 두었어요.'; renderEdit(); return; }
     usePhoto(r.imageId, { generated: true });
