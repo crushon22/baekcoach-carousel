@@ -71,7 +71,7 @@ function sceneKey(stage, scene, { still }) {
   const dots = h('span', { class: 'mock-dots' });
   const save = h('span', { class: 'btn btn-primary mock-btn' }, '키 저장');
   stage.replaceChildren(h('div', { class: 'mock-panel', 'aria-hidden': 'true' },
-    h('div', { class: 'mock-row' }, h('strong', { class: 'mock-title' }, 'Gemini 키'), badge),
+    h('div', { class: 'mock-row' }, h('strong', { class: 'mock-title' }, 'AI 키'), badge),
     h('div', { class: 'mock-input mock-key' }, dots),
     h('div', { class: 'mock-row mock-end' }, save)));
   const full = '•••• •••• ••••';
@@ -180,7 +180,7 @@ const FAQ = [
   ['faq-safe', '키는 안전한가요?', '키는 이 브라우저에만 저장되고 개발자나 다른 서버로 보내지 않아요. 공용 컴퓨터에서는 다 쓴 뒤 설정에서 "저장된 키 지우기"를 눌러 주세요.'],
   ['faq-disclosure', '파트너스 고지 문구를 끌 수 있나요?', '끌 수 없어요. 쿠팡 파트너스 규정 때문에 캡션 첫 줄에 항상 들어가요. 문구 모양만 설정에서 고를 수 있어요.'],
   ['faq-photos', '사진은 몇 장까지 쓸 수 있나요?', '사진 캐러셀은 2장에서 10장까지예요. 순서가 카드 순서이고 1번이 커버예요.'],
-  ['faq-transform', '판매처 사진을 그대로 써도 되나요? 배경을 바꾸거나 새로 그릴 수 있나요?', '사진 줄의 "AI로 새로 그리기"를 누르면 같은 상품을 다른 각도·구도·배경의 새 사진으로 바꿔 중복 사진을 피할 수 있어요. 한 장씩은 사진을 누르고 "AI로 바꾸기"에서 새로 그리기·배경 바꾸기·그림체·보정·비율 늘리기·직접 쓰기 중에 고르면 돼요. 상품 모양은 그대로 두고, 바꾼 사진에는 "연출 이미지" 표시가 붙어요. 무료 키라 막히면 요청문을 복사해 Gemini 앱이나 ChatGPT에서 만든 뒤 올릴 수 있어요.'],
+  ['faq-transform', '판매처 사진을 그대로 써도 되나요? 배경을 바꾸거나 새로 그릴 수 있나요?', '사진 줄의 "AI로 새로 그리기"를 누르면 같은 상품을 다른 각도·구도·배경의 새 사진으로 바꿔 중복 사진을 피할 수 있어요. 한 장씩은 사진을 누르고 "AI로 바꾸기"에서 새로 그리기·배경 바꾸기·그림체·보정·비율 늘리기·직접 쓰기 중에 고르면 돼요. 상품 모양은 그대로 두고, 바꾼 사진에는 "연출 이미지" 표시가 붙어요. 한도·잔액 때문에 막히면 요청문을 복사해 Gemini 앱이나 ChatGPT에서 만든 뒤 올릴 수 있어요.'],
   ['faq-drop', '사진을 더 쉽게 넣을 수 있나요?', '시작 화면에 사진 파일을 끌어다 놓거나, 캡처한 사진을 붙여 넣기(Ctrl+V · ⌘V)하면 바로 들어가요.'],
   ['faq-flag', '🔎 표시는 뭔가요?', '근거가 확인되지 않은 주장이에요. "완화해서 쓰기", "빼기", "내가 확인했어요" 중 하나로 정리한 뒤 올려 주세요.'],
 ];

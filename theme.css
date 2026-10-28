@@ -584,4 +584,5 @@ body.drop-over #stage { outline: 3px dashed var(--blue); outline-offset: -6px; b
 .nav-only, .nav-label { display: none; }
 .recreate-row { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
 .recreate-row .btn { color: var(--blue-dark); }
+.recreate-row .recreate-stop { color: inherit; }
 .photo-actions .btn, .recreate-row .btn { gap: 6px; }

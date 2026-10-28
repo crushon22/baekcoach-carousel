@@ -24,6 +24,7 @@ export const S = {
   photoSel: { photo: null, web: null, topic: null },   // 사진 줄에서 고른 썸네일 번호
   photos: [],              // 사진 캐러셀: 올린 사진 imageId (순서 = 카드 순서)
   genImages: new Set(),    // 시작 화면에서 AI 로 바꾼 사진 imageId (만든 카드에 "연출 이미지" 표시)
+  genFrom: new Map(),      // AI 로 바꾼 사진 imageId → 처음 원본 imageId (상품 사진 고르기에서 "이미 넣음"으로 보기)
   font: 'pretendard',      // 카드 글씨체(lib/fonts.js CARD_FONTS 의 key). carousel.font 로 들어간다
   photoStyle: 'outline',   // 사진 캐러셀 글씨 스타일
   ad: {},                  // 광고 표기 설정 {cardnews:{on,position,look,text,size}, photo:{…}} (ui/adlabel.js 의 adCfg 로 읽는다)

@@ -1,6 +1,6 @@
 // 두 가지 버전 중 사진 캐러셀: 버전 고르기, 사진 목록(올리기·순서·빼기), 글씨 스타일 고르기, [광고] 표시, 만들 상품 정보.
 // 데이터 계약은 docs/사진캐러셀.md. 카드 편집은 tab-edit-photo.js.
-import { request } from '../lib/bus.js';
+import { request, stream } from '../lib/bus.js';
 import * as store from '../lib/store.js';
 import { IS_WEB } from '../lib/platform.js';
 import { formatPrice } from '../lib/coupang.js';
@@ -122,6 +122,8 @@ export function photoStrip(list, { key, listId, uploadId, firstLabel = '커버',
   const recreate = list.length ? h('div', { class: 'recreate-row', id: `${listId}-recreate-row` },
     h('button', { type: 'button', class: 'btn btn-block', id: `${listId}-recreate`, disabled: !!recreating || !todo, onclick: () => recreateAll(list, listId) },
       icon('sparkle', { size: 18 }), busy ? `새로 그리는 중… ${recreating.done}/${recreating.total}` : todo ? `사진 ${todo}장 AI로 새로 그리기 (중복 피하기)` : '모두 새로 그린 사진이에요'),
+    busy ? h('button', { type: 'button', class: 'btn btn-block recreate-stop', id: `${listId}-recreate-stop`, disabled: recreating.stopped, onclick: () => cancelRecreate() },
+      recreating.stopped ? '멈추는 중…' : '멈추기') : null,
     h('p', { class: 'muted small' }, '판매처 사진을 그대로 쓰지 않고, 같은 상품을 다른 각도·구도·배경의 새 사진으로 바꿔요. 원본은 그대로 남고, 카드에는 "연출 이미지" 표시가 붙어요.')) : null;
   const actions = sel !== null && list[sel] ? h('div', { class: 'photo-actions', id: `${listId}-actions` },
     h('button', { type: 'button', class: 'btn', 'data-act': 'up', disabled: sel === 0, onclick: () => move(list, sel, -1, key) }, icon('arrowLeft', { size: 18 }), '앞으로'),
@@ -131,37 +133,60 @@ export function photoStrip(list, { key, listId, uploadId, firstLabel = '커버',
   return h('div', { class: 'photo-strip' }, row, actions, recreate);
 }
 
-/** 사진 전부 새로 그리기(중복 피하기): 아직 새로 그리지 않은 사진을 2장씩 차례로 image.transform(recreate) 에 보낸다.
- *  연출은 사진마다 돌려 가며(깔끔한 연출 → 생활 속 → 다른 각도 → 위에서) 서로 비슷해지지 않게 한다. 한도에 걸리면 멈추고 안내한다. */
-let recreating = null;   // {listId, done, total}
+/** 지금 화면에 걸린 사진 목록인지(새 상품으로 바뀌면 옛 목록은 버려진다) */
+const isLiveList = (list) => list === S.photos || list === S.topicImageIds || list === S.manual?.imageIds;
+/** AI 로 바꾼 사진을 원본 자리에 넣는다. 처음 원본을 기억해 상품 사진 고르기가 "이미 넣음"으로 보게 한다. */
+function placeGenerated(list, oldId, newId) {
+  const at = list.indexOf(oldId);
+  if (at < 0) return false;
+  list[at] = newId;
+  (S.genImages ||= new Set()).add(newId);
+  (S.genFrom ||= new Map()).set(newId, S.genFrom.get(oldId) ?? oldId);
+  return true;
+}
+/** id 가 목록에 원본 그대로 또는 AI 로 바꾼 모습으로 들어 있는 자리(없으면 -1) */
+const slotOf = (list, id) => list.findIndex((x) => x === id || S.genFrom?.get(x) === id);
+
+/** 사진 전부 새로 그리기(중복 피하기): 아직 새로 그리지 않은 사진을 2장씩 차례로 image.transformStream(recreate) 에 보낸다.
+ *  연출은 사진마다 돌려 가며(깔끔한 연출 → 생활 속 → 다른 각도 → 위에서) 서로 비슷해지지 않게 한다. 한도에 걸리면 멈추고 안내한다.
+ *  [멈추기]·새 상품 시작·패널 닫기면 진행 중인 요청까지 끊는다(포트 취소 → 서비스워커 fetch 중단). */
+let recreating = null;   // {listId, done, total, stopped, runs:Set<stream>}
 const RECREATE_OPTS = TRANSFORMS.find((t) => t.key === 'recreate').options.map((o) => o.key);
+export function cancelRecreate() {
+  if (!recreating || recreating.stopped) return;
+  recreating.stopped = true;
+  for (const s of recreating.runs) s.cancel();
+  fn.renderStage();
+}
 async function recreateAll(list, listId) {
   if (recreating) return;
   const ids = list.filter((id) => !S.genImages?.has(id));
   if (!ids.length) return;
-  recreating = { listId, done: 0, total: ids.length };
+  const job = recreating = { listId, done: 0, total: ids.length, stopped: false, runs: new Set() };
   fn.renderStage();
   const title = (S.manual.title || '').trim() || S.rec?.product?.title;
   let stop = null, k = 0;
   const one = async (id) => {
-    if (stop) return;
+    if (stop || job.stopped) return;
     const option = RECREATE_OPTS[(list.indexOf(id) >= 0 ? list.indexOf(id) : k++) % RECREATE_OPTS.length];
-    try {
-      const r = await request('image.transform', { imageId: id, kind: 'recreate', option, aspect: '4:5', productTitle: title }, { timeoutMs: 200000 });
-      if (r.fallback || !r.imageId) { stop = stop || { messageKo: r.messageKo }; return; }
-      const at = list.indexOf(id);
-      if (at >= 0) { list[at] = r.imageId; (S.genImages ||= new Set()).add(r.imageId); }
-    } catch (e) { stop = stop || { error: e }; return; }
-    recreating.done++;
+    const s = stream('image.transformStream', { imageId: id, kind: 'recreate', option, aspect: '4:5', productTitle: title });
+    job.runs.add(s);
+    let r;
+    try { r = await s.done; } catch (e) { if (e?.code !== 'CANCELLED' && !job.stopped) stop = stop || { error: e }; return; } finally { job.runs.delete(s); }
+    if (r.fallback || !r.imageId) { stop = stop || { messageKo: r.messageKo }; return; }
+    if (!isLiveList(list) || !placeGenerated(list, id, r.imageId)) return; // 그 사이 사진을 빼거나 새 상품으로 바뀜
+    job.done++;
     fn.renderStage();
   };
   const queue = ids.slice();
-  await Promise.all([0, 1].map(async () => { while (queue.length && !stop) await one(queue.shift()); }));
-  const done = recreating.done;
+  await Promise.all([0, 1].map(async () => { while (queue.length && !stop && !job.stopped) await one(queue.shift()); }));
+  const done = job.done;
   recreating = null;
   fn.renderStage();
+  if (!isLiveList(list)) return; // 새 상품으로 넘어갔으면 옛 결과를 알리지 않는다
   if (stop?.error) showError(stop.error);
   else if (stop) toast(`${done}장을 새로 그렸어요. ${stop.messageKo || '이미지 생성 한도에 걸렸어요.'}`, { kind: 'warn', ms: 7000 });
+  else if (job.stopped) toast(done ? `멈췄어요. 사진 ${done}장은 새로 그린 사진으로 바꿨어요.` : '멈췄어요. 바꾼 사진은 없어요.');
   else toast(`사진 ${done}장을 새로 그렸어요. 원본은 그대로 남아 있어요.`);
 }
 
@@ -169,7 +194,7 @@ async function recreateAll(list, listId) {
 function transformListPhoto(list, i) {
   const id = list[i];
   openImageTool({ imageId: id, aspect: '4:5', productTitle: (S.manual.title || '').trim() || S.rec?.product?.title,
-    onUse: (nid) => { const at = list.indexOf(id); if (at < 0) return; list[at] = nid; (S.genImages ||= new Set()).add(nid); fn.renderStage(); } });
+    onUse: (nid) => { if (placeGenerated(list, id, nid)) fn.renderStage(); } });
 }
 
 /** 확장: 쿠팡 상품 사진 골라 넣기 */
@@ -180,7 +205,7 @@ function productPhotoPicker() {
   const grid = h('div', { class: 'thumbs', id: 'product-photo-grid' });
   for (let i = 0; i < n; i++) {
     const id = rec.imageIds?.[i];
-    const b = h('button', { type: 'button', class: 'thumb-btn product-photo', 'data-index': i, 'aria-label': `상품 사진 ${i + 1} 넣기`, 'aria-pressed': String(!!id && S.photos.includes(id)), onclick: () => addProductPhoto(i) },
+    const b = h('button', { type: 'button', class: 'thumb-btn product-photo', 'data-index': i, 'aria-label': `상품 사진 ${i + 1} 넣기`, 'aria-pressed': String(!!id && slotOf(S.photos, id) >= 0), onclick: () => addProductPhoto(i) },
       h('span', { class: 'thumb-empty' }, id ? '…' : `${i + 1}`));
     if (id) imageUrl(id).then((u) => { if (u) b.replaceChildren(h('img', { src: u, alt: '' })); });
     grid.append(b);
@@ -196,7 +221,7 @@ async function addProductPhoto(i) {
       rec.imageIds[i] = r.imageId;
     }
     const id = rec.imageIds[i];
-    const at = S.photos.indexOf(id);
+    const at = slotOf(S.photos, id); // AI 로 바꾼 모습으로 들어 있어도 "넣음" — 다시 누르면 그 자리를 뺀다
     if (at >= 0) S.photos.splice(at, 1);
     else if (S.photos.length >= MAX_PHOTOS) toast(`사진은 ${MAX_PHOTOS}장까지만 쓸 수 있어요.`, { kind: 'warn' });
     else S.photos.push(id);

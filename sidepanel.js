@@ -9,7 +9,7 @@ import { TYPE_LABELS } from './ui/labels.js';
 import { PURPOSES } from './lib/ai-util.js';
 import { COUNT_OPTIONS } from './ui/labels.js';
 import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey } from './ui/start.js';
-import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs } from './ui/photo.js';
+import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate } from './ui/photo.js';
 import { decorateIcons, logoMark, icon } from './ui/icons.js';
 import { renderPreview, schedulePreview } from './ui/preview.js';
 import { adCfg } from './ui/adlabel.js';
@@ -210,6 +210,7 @@ async function makeFromShorts(script) {
 /** 새 상품/주제로 시작. 하던 작업은 저장만 하고 덮어쓰지 않는다. */
 async function startNew({ keepNothing = false } = {}) {
   if (S.stream) { S.stream.cancel(); S.stream = null; }
+  cancelRecreate(); // 사진 전부 새로 그리기 중이면 멈춘다(옛 상품 사진에 쓰던 요청)
   if (S.project && S.phase === 'ready') await saveNow();
   S.project = null; S.phase = 'start'; S.progress = null; S.chat = [];
   S.newProductBanner = null; S.picker = null; S.sel = null; S.link = ''; S.searchResults = null;
