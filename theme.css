@@ -482,3 +482,78 @@ h1, h2, h3, .hero-title, .guide-title, .guide-h, .qs-title, .brand-text, .h1-sub
   font-family: var(--font-cute) !important; font-weight: 400 !important; letter-spacing: 0 !important;
 }
 .mode-tab[aria-selected="true"], .tabs [role=tab][aria-selected="true"] { font-weight: 400 !important; }
+
+/* ───── 사용 방법: 1분 따라 하기 (슬라이드 4장 + 자주 묻는 질문) ───── */
+.guide-band { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 0 0 16px; min-height: 48px; background: var(--zone); border: 1px solid var(--line); border-radius: var(--r-sheet); }
+.band-link { flex: 1 1 auto; min-height: 44px; display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.band-link .ico { margin: 0; color: var(--blue); }
+.guide-sheet, .web .guide-sheet { height: 94vh; max-width: 640px; }
+.guide-sheet .sheet-head { padding: 8px 12px 0; align-items: flex-end; }
+.guide-tabs { display: flex; gap: 0; }
+.guide-tab { min-height: 48px; padding: 0 16px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--sub); font: inherit; font-size: 16px; cursor: pointer; }
+.guide-tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--blue); }
+.guide-sheet .sheet-head .btn { margin-bottom: 4px; }
+.guide-body { flex: 1 1 auto; padding: 16px; gap: 0; overflow: auto; }
+.guide-slide { display: flex; flex-direction: column; gap: 16px; min-height: 100%; }
+.guide-slide[hidden], .faq-list[hidden] { display: none; }
+.guide-stage { flex: 1 1 auto; min-height: 300px; display: flex; align-items: center; justify-content: center; background: var(--zone); border-radius: var(--r-sheet); padding: 16px; touch-action: pan-y; user-select: none; overflow: hidden; }
+.guide-side { display: flex; flex-direction: column; gap: 8px; }
+.guide-count { color: var(--sub); font-size: 16px; font-weight: 500; }
+.guide-slide-title { font-size: 28px; line-height: 1.25; margin: 0; }
+.guide-slide-text { margin: 0; color: var(--body); }
+.guide-more { align-self: flex-start; padding: 0; min-height: 44px; }
+.guide-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.guide-btns { display: flex; gap: 8px; margin-left: auto; }
+.guide-btns .btn[hidden] { display: none; }
+.guide-dots { display: flex; }
+.guide-dot { width: 32px; height: 44px; padding: 0; border: 0; background: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.guide-dot span { width: 8px; height: 8px; border-radius: 50%; background: #CBD5E1; }
+.guide-dot[aria-current="true"] span { background: var(--blue); width: 20px; border-radius: 4px; }
+.guide-canvas { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+.guide-split { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px; width: 100%; }
+.guide-split.guide-col { flex-direction: column; flex-wrap: nowrap; gap: 12px; }
+.guide-card-host { width: 220px; flex: none; }
+.guide-phone { width: 210px; flex: none; }
+.guide-phone .bcpf { max-width: 210px; }
+.mock-panel { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 10px; padding: 16px; background: #fff; border: 1px solid var(--line); border-radius: var(--r-sheet); }
+.mock-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mock-end { justify-content: flex-end; }
+.mock-title { color: var(--ink); font-size: 18px; }
+.mock-label { color: var(--ink); font-weight: 700; font-size: 16px; }
+.mock-input { min-height: 44px; display: flex; align-items: center; padding: 0 12px; border: 1px solid #CBD5E1; border-radius: var(--r-input); background: #fff; color: var(--ink); font-size: 16px; }
+.mock-key .mock-dots { letter-spacing: .12em; }
+.mock-btn { pointer-events: none; transition: transform .1s; }
+.mock-btn.is-pressed { transform: scale(.96); background: var(--blue-dark); }
+.caret { width: 2px; height: 20px; background: var(--blue); margin-left: 2px; animation: caret-blink 1s steps(1) infinite; }
+@keyframes caret-blink { 50% { opacity: 0; } }
+.mock-seg { pointer-events: none; }
+.guide-stage .mode-tabs.mock-seg { align-self: center; }
+.mock-seg .mode-tab { min-width: 104px; }
+.mock-chat { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 8px; }
+.mock-chat .bubble { align-self: flex-end; }
+.mock-done { margin-right: auto; }
+@media (prefers-reduced-motion: reduce) { .caret { animation: none !important; } }
+
+@media (min-width: 1040px) {
+  .guide-sheet, .web .guide-sheet { width: 980px; max-width: 980px; height: 680px; max-height: 94vh; }
+  .guide-slide { flex-direction: row; align-items: stretch; gap: 36px; }
+  .guide-stage { flex: 1.45 1 0; min-height: 0; padding: 24px; }
+  .guide-side { flex: 1 1 0; justify-content: center; padding: 8px 8px 8px 0; }
+  .guide-slide-title { font-size: 32px; }
+  .guide-card-host { width: 300px; }
+  .guide-phone { width: 210px; }
+  .guide-phone .bcpf { max-width: 210px; }
+  .mock-panel { max-width: 340px; }
+  .guide-stage > .mock-panel { max-width: 420px; padding: 28px; gap: 16px; box-shadow: 0 12px 32px rgba(15, 23, 42, .08); }
+  .guide-stage > .mock-panel .mock-title { font-size: 24px; }
+  .guide-stage > .mock-panel .mock-input { min-height: 56px; font-size: 18px; }
+  .guide-stage > .mock-panel .btn { min-height: 52px; font-size: 18px; padding: 0 22px; }
+  .guide-split.guide-col { gap: 8px; }
+  .guide-split:not(.guide-col) { flex-wrap: nowrap; }
+}
+@media (max-width: 1039px) { .guide-stage { max-height: none; padding: 12px; } .guide-card-host { width: 180px; } .guide-phone { width: 156px; } .guide-phone .bcpf { max-width: 156px; } .guide-split.guide-col { gap: 8px; } }
+.guide-sheet .faq-list { padding: 4px 0 16px; }
+/* 슬라이드 제목·탭·FAQ 질문은 앱 제목 글씨(주아) */
+.guide-slide-title, .guide-tab, .mock-title, .faq > summary { font-family: var(--font-cute, inherit) !important; font-weight: 400 !important; }
+
+.link-btn[hidden], .guide-more[hidden] { display: none; }
