@@ -1,5 +1,6 @@
 // 직접 만든 인라인 아이콘 세트 (둥근 선 2px, 끝 둥글게). 외부 아이콘 라이브러리·CDN 없음.
 // <svg> 를 xmlns 없이 HTML 로 파싱하면 브라우저가 SVG 이름공간을 자동으로 붙인다(그래서 http 주소 문자열이 필요 없다).
+import { logoSvg } from './brand.js';
 const PATHS = {
   home: '<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>',
   photo: '<rect x="3" y="6" width="18" height="14" rx="4"/><circle cx="12" cy="13" r="3.5"/><path d="M8.5 6l1.2-2h4.6l1.2 2"/>',
@@ -40,10 +41,10 @@ export function icon(name, { size = 22, cls = '' } = {}) {
   return t.content.firstElementChild;
 }
 
-/** 앱바 로고 마크: 청록→초록 그라데이션 고리(가운데 비움) */
+/** 앱바 로고 마크 — 모양·색은 ui/brand.js(카드 겹침, 보라 파랑) */
 export function logoMark(size = 30) {
   const t = document.createElement('template');
-  t.innerHTML = `<svg viewBox="0 0 32 32" width="${size}" height="${size}" aria-hidden="true" focusable="false" class="logo-mark"><defs><linearGradient id="lgm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2DD4BF"/><stop offset="1" stop-color="#03C75A"/></linearGradient></defs><circle cx="16" cy="16" r="10.5" fill="none" stroke="url(#lgm)" stroke-width="5"/></svg>`;
+  t.innerHTML = logoSvg(size);
   return t.content.firstElementChild;
 }
 
