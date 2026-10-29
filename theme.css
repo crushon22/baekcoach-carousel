@@ -636,7 +636,12 @@ body.drop-over #stage { outline: 3px dashed var(--blue); outline-offset: -6px; b
 .identify-row .identify-acts .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
 .make-gate { margin: 0; color: var(--sub); }
 .count-pick { display: grid; gap: 6px; }
-.count-pick .chips .chip[aria-pressed="true"] { font-weight: 600; }
+.count-stepper { display: flex; align-items: center; gap: 8px; }
+.count-stepper .count-btn { width: 44px; min-width: 44px; padding: 0; font-size: 20px; line-height: 1; }
+.count-stepper .count-input { width: 72px; min-height: 44px; text-align: center; font-weight: 600; font-size: 16px; -moz-appearance: textfield; }
+.count-stepper .count-input::-webkit-outer-spin-button, .count-stepper .count-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.count-unit { color: var(--muted); }
+#product-ref-line[data-state="busy"]::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--blue); animation: identify-pulse 1s ease-in-out infinite; }
 /* 검수 탭 · 카드별 검수: 카드 글 줄 */
 .card-check { display: grid; gap: 8px; }
 .card-lines { margin: 0; padding: 10px 12px; list-style: none; border-radius: 10px; background: var(--zone); color: var(--ink); }

@@ -100,7 +100,8 @@ function render() {
         h('div', { id: 'imgtool-result' }, res ? pic(res.imageId, '바뀐 사진') : pic(null, '바뀐 사진', st.busy ? '만드는 중…' : '여기에 나와요'))),
       // 원본과 같은 제품인지 확인한 결과(서비스워커 검증). 다르면 쓰기 전에 알려 준다
       res?.check?.same === false ? h('p', { class: 'warn-line', id: 'imgtool-check' }, `⚠️ 원본과 달라 보여요: ${(res.check.differences || []).join(', ') || res.check.summary || '색·모양이 바뀜'}. 그래도 쓰려면 [이 사진 쓰기], 아니면 [다시 바꾸기].`)
-        : res?.check?.same === true ? h('p', { class: 'ok-line small', id: 'imgtool-check' }, '✅ 원본과 같은 제품으로 확인했어요.') : null,
+        : res?.check?.same === true ? h('p', { class: 'ok-line small', id: 'imgtool-check' }, '✅ 원본과 같은 제품으로 확인했어요.')
+        : res?.check?.comparable === false ? h('p', { class: 'muted small', id: 'imgtool-check' }, '원본과 대조할 부분이 적어 같은 제품인지 확인하지 못했어요. 직접 봐 주세요.') : null,
       h('div', { class: 'label' }, '바꾸는 방법'), kinds, options, help, extra,
       h('p', { class: 'muted small' }, '누를 때만 만들어요. 상품 모양은 그대로 두고, 사진에 글자·워터마크는 넣지 않아요. 카드에도 AI 표시를 넣지 않으니 올릴 때 AI 표시를 직접 체크하세요.'),
       h('details', { class: 'extra imgtool-other', open: !!fb },
@@ -114,7 +115,7 @@ async function run() {
   try {
     const r = await request('image.transform', {
       imageId: st.src, kind: st.kind, option: st.option, extra: st.extra, aspect: st.opts?.aspect || '4:5',
-      productTitle: st.opts?.productTitle, productLook: S.ident?.look || undefined, projectId: st.opts?.projectId,
+      productTitle: st.opts?.productTitle, productLook: S.ident?.look || undefined, productRef: S.productRef?.ref || undefined, projectId: st.opts?.projectId,
     }, { timeoutMs: 200000 }); // GPT 이미지는 서비스워커가 150초까지 기다린다 → 패널은 그보다 길게
     if (r.fallback || !r.imageId) st.fallback = { messageKo: r.messageKo, promptKo: r.promptKo };
     else st.result = { imageId: r.imageId, model: r.model, check: r.check || null };

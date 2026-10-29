@@ -1,5 +1,5 @@
 // 사진 보고 상품 이름·브랜드 알아보기(ai.identifyProduct).
-//  · 로고·상표 글자로 확인된 브랜드는 이름 앞에 붙어서 온다. 모양만 보고 짐작한 브랜드는 [브랜드 넣기]를 눌러야 들어간다
+//  · 로고·상표 글자로 확인된 브랜드는 이름 앞에 붙어서 온다. 희미한 글자로 짐작한 브랜드(faint)는 확신이 있으면 붙고([브랜드 빼기]로 뺄 수 있음), 모양만 보고 짐작한 브랜드는 [브랜드 넣기]를 눌러야 들어간다
 // 이름 칸이 비어 있는데 사진이 들어오면 바로 알아보고, 사람이 이름을 확인해야 만들기가 켜진다.
 //  · busy(알아보는 중) → ask(이게 맞나요? [맞아요][이름 고치기]) → ok
 //  · unknown(모르겠어요): 이름을 적으면 ok. 사진 캐러셀은 [이름 없이 만들기]도 된다(이름은 지어내지 않는다)
@@ -96,11 +96,16 @@ function rowKids(st) {
   ];
 }
 
-/** 브랜드 한 줄: 로고로 확인 / 모양으로 추정([브랜드 넣기]) / 못 찾음 */
+/** 브랜드 한 줄: 로고로 확인 / 희미한 글자로 추정·모양으로 추정([브랜드 넣기]·[브랜드 빼기]) / 못 찾음 */
 function brandLine(it) {
   const b = it.brand;
   if (!b) return h('p', { class: 'identify-brand none', id: 'identify-brand' }, h('span', { class: 'identify-brand-k' }, '브랜드'), '사진에서 로고·상표 글자를 찾지 못했어요');
   const label = [b.brand, b.model].filter(Boolean).join(' ');
+  if (b.from === 'faint') {
+    return h('div', { class: 'identify-brand', id: 'identify-brand', 'data-from': 'faint' },
+      h('p', null, h('span', { class: 'identify-brand-k' }, '브랜드 추정'), h('b', null, label), h('span', { class: 'muted' }, `${b.evidence || '희미하게 보이는 글자로 짐작'} · ${pct(b.confidence)}`)),
+      h('button', { type: 'button', class: 'btn btn-chip', id: 'btn-ident-brand', 'aria-pressed': String(!!it.brandOn), onclick: toggleBrand }, it.brandOn ? '브랜드 빼기' : '브랜드 넣기'));
+  }
   if (b.from === 'logo') {
     return h('p', { class: 'identify-brand', id: 'identify-brand', 'data-from': 'logo' },
       h('span', { class: 'identify-brand-k' }, '브랜드'), h('b', null, label), h('span', { class: 'muted' }, b.evidence || '사진 속 로고·글자로 확인'));
@@ -146,7 +151,7 @@ async function run(ids, { inputId, optional, manual = false }) {
     S.manual.title = r.name;
     const inp = document.getElementById(S.ident.inputId);
     if (inp) inp.value = r.name;
-    Object.assign(S.ident, { status: 'ask', name: r.name, base: r.base || r.name, brand: r.brand || null, brandOn: r.brand?.from === 'logo', confidence: r.confidence, evidence: r.evidence || '' });
+    Object.assign(S.ident, { status: 'ask', name: r.name, base: r.base || r.name, brand: r.brand || null, brandOn: r.brandOn ?? r.brand?.from === 'logo', confidence: r.confidence, evidence: r.evidence || '' });
     fn.schedulePreview?.(200);
   } else {
     Object.assign(S.ident, { status: 'unknown', why: r.why || '', similar: r.similar || '' });

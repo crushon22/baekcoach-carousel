@@ -22,9 +22,11 @@ export const STYLES = [
   { key: 'shadow', label: '그림자', desc: '테두리 없이 진한 그림자' },
 ];
 export const STYLE_LABEL = Object.fromEntries(STYLES.map((s) => [s.key, s.label]));
-export const MAX_PHOTOS = 7;          // 캐러셀 최대 7장(2026-10-29 사용자 결정)
+export const MAX_PHOTOS = 10;         // 캐러셀 최대 10장(2026-10-29 사용자 결정: 장수는 직접 적고 최대 10)
 export const MIN_PHOTOS = 2;
-export const COUNT_CHOICES = [3, 5, 7];  // "몇 장으로 만들까요?" — 모자라면 AI 사진으로 채운다
+export const DEFAULT_COUNT = 5;       // "몇 장으로 만들까요?" 기본값 — 모자라면 AI 사진으로 채운다
+/** 목표 장수 정리: 2~10 정수만, 아니면 기본 5 */
+export const clampCount = (v) => { const n = Math.round(Number(v)); return Number.isInteger(n) && n >= MIN_PHOTOS && n <= MAX_PHOTOS ? n : DEFAULT_COUNT; };
 
 // ───────────────────────── 마지막 선택 기억 ─────────────────────────
 
@@ -37,7 +39,7 @@ export async function loadModePrefs() {
     else if (typeof m?.adLabel === 'boolean') S.ad = { photo: { on: m.adLabel } };
     if (typeof m?.font === 'string') S.font = m.font;
     if (typeof m?.tease === 'boolean') S.tease = m.tease;
-    if (COUNT_CHOICES.includes(m?.photoCount)) S.photoCount = m.photoCount;
+    if (m?.photoCount != null) S.photoCount = clampCount(m.photoCount);
   } catch { /* 기억 못 해도 기본값 */ }
 }
 export function fontCard() {
@@ -100,7 +102,7 @@ export async function addPhotos(files) {
 export async function maybeAutoFill() {
   if (S.mode !== 'photo' || S.phase !== 'start' || recreating) return;
   const have = S.photos.length;
-  const want = COUNT_CHOICES.includes(S.photoCount) ? S.photoCount : 5;
+  const want = clampCount(S.photoCount);
   if (!have || have >= want) return;
   if (S.ident?.status === 'busy') return;
   const key = `${want}:${S.photos.join(',')}`;
@@ -194,21 +196,24 @@ async function addAiPhotos(list, listId, { total: wantTotal = ADD_AI_COUNT, auto
   if (!originals.length) return;
   const total = Math.min(wantTotal, Math.max(0, MAX_PHOTOS - list.length));
   if (!total) { if (!auto) toast(`사진은 ${MAX_PHOTOS}장까지예요. 몇 장 빼고 다시 눌러 주세요.`, { kind: 'warn' }); return; }
-  const job = recreating = { listId, done: 0, total, stopped: false, runs: new Set(), rejected: 0, rejectedWhy: '', auto };
+  const job = recreating = { listId, done: 0, total, stopped: false, runs: new Set(), rejected: 0, rejectedWhy: '', unverified: 0, auto };
   fn.renderStage();
   const title = (S.manual.title || '').trim() || S.rec?.product?.title;
   const look = S.ident?.look || '';
+  const ref = await ensureProductRef(title);   // 이름으로 찾은 제품 모습(모르면 null) — 제품 자체가 바뀌지 않게 요청문·검증에 같이 넣는다
+  if (!isLiveList(list) || job.stopped) { recreating = null; fn.renderStage(); return; }
   let stop = null;
   const one = async (k) => {
     if (stop || job.stopped) return;
     const src = originals[k % originals.length];                 // 참고 사진은 원본을 돌아가며
     const option = RECREATE_OPTS[k % RECREATE_OPTS.length];        // 연출도 돌아가며(깔끔한 연출 → 생활 속 → 다른 각도)
-    const s = stream('image.transformStream', { imageId: src, kind: 'recreate', option, aspect: '4:5', productTitle: title, productLook: look });
+    const s = stream('image.transformStream', { imageId: src, kind: 'recreate', option, aspect: '4:5', productTitle: title, productLook: look, productRef: ref });
     job.runs.add(s);
     let r;
     try { r = await s.done; } catch (e) { if (e?.code !== 'CANCELLED' && !job.stopped) stop = stop || { error: e }; return; } finally { job.runs.delete(s); }
     if (r.fallback || !r.imageId) { stop = stop || { messageKo: r.messageKo }; return; }
     if (r.check && r.check.same === false) { job.rejected++; job.rejectedWhy = r.check.differences?.[0] || r.check.summary || ''; return; }   // 원본과 다른 제품이면 넣지 않는다
+    if (r.check && r.check.comparable === false) job.unverified++;   // 원본과 대조할 게 없어 확인 못 함(연출 차이는 거절 사유가 아니다) — 넣되 알려 준다
     if (!isLiveList(list) || list.length >= MAX_PHOTOS) return;    // 그 사이 새 상품으로 바뀌었거나 꽉 참
     list.push(r.imageId);
     (S.genImages ||= new Set()).add(r.imageId);
@@ -218,17 +223,51 @@ async function addAiPhotos(list, listId, { total: wantTotal = ADD_AI_COUNT, auto
   };
   const queue = Array.from({ length: total }, (_, k) => k);
   await Promise.all([0, 1].map(async () => { while (queue.length && !stop && !job.stopped) await one(queue.shift()); }));
-  const { done, rejected, rejectedWhy } = job;
+  const { done, rejected, rejectedWhy, unverified } = job;
   recreating = null;
   fn.renderStage();
   if (!isLiveList(list)) return; // 새 상품으로 넘어갔으면 옛 결과를 알리지 않는다
-  const rej = rejected ? ` 원본과 달라 보여서 뺀 사진 ${rejected}장${rejectedWhy ? `(${rejectedWhy})` : ''}.` : '';
+  const rej = (rejected ? ` 원본과 달라 보여서 뺀 사진 ${rejected}장${rejectedWhy ? `(${rejectedWhy})` : ''}.` : '') + (unverified ? ` ${unverified}장은 원본과 대조할 부분이 적어 확인하지 못했어요. 제품이 맞는지 봐 주세요.` : '');
   if (stop?.error) showError(stop.error);
   else if (stop) toast(`AI 사진 ${done}장을 추가했어요. ${stop.messageKo || '이미지 생성 한도에 걸렸어요.'}`, { kind: 'warn', ms: 7000 });
   else if (job.stopped) toast(done ? `멈췄어요. AI 사진 ${done}장은 추가됐어요.` : '멈췄어요. 추가한 사진은 없어요.');
   else if (!done && rejected) toast(`AI 사진을 넣지 못했어요.${rej} 다시 눌러 보세요.`, { kind: 'warn', ms: 7000 });
-  else if (auto) toast(`사진이 ${list.length}장이 되도록 AI 사진 ${done}장을 만들어 채웠어요. 원본은 그대로예요.${rej}`, { ms: rejected ? 7000 : 5000 });
-  else toast(`AI 사진 ${done}장을 뒤에 추가했어요. 원본은 그대로예요.${rej}`, { ms: rejected ? 7000 : 4000 });
+  else if (auto) toast(`사진이 ${list.length}장이 되도록 AI 사진 ${done}장을 만들어 채웠어요. 원본은 그대로예요.${rej}`, { ms: rej ? 7000 : 5000 });
+  else toast(`AI 사진 ${done}장을 뒤에 추가했어요. 원본은 그대로예요.${rej}`, { ms: rej ? 7000 : 4000 });
+}
+
+/**
+ * 상품 이름으로 그 제품이 실제로 어떻게 생겼는지 찾아 둔다(ai.productLook, 2026-10-29 사용자 요청: "제품 정보를 넣어 주면 제품 검색 후 AI 이미지로").
+ * 같은 이름이면 한 번만 찾고(S.productRef), 모르는 제품이면 null — 지어내지 않는다. 못 찾아도 AI 사진 만들기는 막지 않는다.
+ * @returns {Promise<{look:string, mustKeep:string[], avoid:string[], confidence:number}|null>}
+ */
+export async function ensureProductRef(title) {
+  const key = String(title || '').trim();
+  if (!key) return null;
+  if (S.productRef?.key === key) return S.productRef.busy ? S.productRef.promise : S.productRef.ref;
+  const entry = S.productRef = { key, ref: null, busy: true, promise: null };
+  entry.promise = (async () => {
+    let ref = null;
+    try {
+      const r = await request('ai.productLook', { title: key, brand: S.ident?.brand?.brand || '', photoLook: S.ident?.look || '' }, { timeoutMs: 45000 });
+      if (r?.known && r.look) ref = { look: r.look, mustKeep: r.mustKeep || [], avoid: r.avoid || [], confidence: r.confidence || 0 };
+    } catch (e) {
+      if (['NO_KEY', 'KEY_INVALID', 'BILLING', 'FORBIDDEN'].includes(e?.code)) showError(e);
+    }
+    if (S.productRef === entry) { entry.ref = ref; entry.busy = false; fn.renderStage(); }
+    return ref;
+  })();
+  fn.renderStage();
+  return entry.promise;
+}
+
+/** 이름으로 찾은 제품 모습 한 줄(찾는 중 · 찾음 · 모름). 사진이 있을 때만 */
+function productRefLine() {
+  const pr = S.productRef;
+  if (!pr || !S.photos.length) return null;
+  if (pr.busy) return h('p', { class: 'muted small', id: 'product-ref-line', 'data-state': 'busy' }, `"${pr.key}"이(가) 어떻게 생긴 제품인지 찾는 중…`);
+  if (!pr.ref) return h('p', { class: 'muted small', id: 'product-ref-line', 'data-state': 'unknown' }, `"${pr.key}"은(는) 이름만으로는 어떤 제품인지 특정하지 못해서, 올린 사진에 보이는 모습만 기준으로 AI 사진을 만들어요.`);
+  return h('p', { class: 'muted small', id: 'product-ref-line', 'data-state': 'ok' }, h('b', null, '이름으로 찾은 제품 모습 '), pr.ref.look);
 }
 
 /** 사진 줄의 한 장을 AI 로 바꾼다. 바꾼 사진은 같은 자리에 들어가고, 만들 때 그 카드에 "연출 이미지" 표시가 붙는다(S.genImages). */
@@ -312,6 +351,7 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
     pageProduct ? null : identifyRow({ ids: S.photos, inputId: 'photo-title', optional: true }),
     teaseRow({ title: pageProduct ? S.rec.product.title : S.manual.title }),
     countPicker(),
+    productRefLine(),
     h('div', { class: 'label label-row' }, h('span', null, '사진'), h('span', { class: 'muted small', id: 'photo-count' }, `${n}장 · 최대 ${MAX_PHOTOS}장`)),
     photoStrip(S.photos, { key: 'photo', listId: 'photo-list', uploadId: 'btn-photo-upload', firstLabel: '커버', onAdd: uploadPhotos }),
     h('p', { class: 'muted small', id: 'photo-drop-hint' }, '사진을 끌어다 놓거나 붙여 넣기(Ctrl+V · ⌘V)로도 넣을 수 있어요. 사진을 누르면 AI로 바꿀 수 있어요.'),
@@ -324,16 +364,27 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
     n < MIN_PHOTOS ? h('p', { class: 'warn-line small center', id: 'photo-few' }, `사진을 ${MIN_PHOTOS}장 이상 올려 주세요 (지금 ${n}장)`) : null));
 }
 
-/** "몇 장으로 만들까요?" 3·5·7 — 사진이 모자라면 AI 사진으로 채우고, 더 많으면 올린 사진을 다 쓴다(최대 7) */
+/** "몇 장으로 만들까요?" 2~10장을 직접 적는다(−/+ 도 됨). 사진이 모자라면 AI 사진으로 채우고, 더 많으면 올린 사진을 다 쓴다(최대 10) */
 function countPicker() {
-  const want = COUNT_CHOICES.includes(S.photoCount) ? S.photoCount : 5;
+  const want = clampCount(S.photoCount);
   const n = S.photos.length;
-  const note = n && n < want ? `사진 ${n}장 + AI 사진 ${want - n}장으로 ${want}장을 만들어요.` : n > want ? `올린 사진 ${n}장을 다 써서 ${n}장으로 만들어요.` : `사진이 모자라면 AI 사진으로 채워요. 더 올리면 올린 만큼(최대 ${MAX_PHOTOS}장).`;
+  const noteOf = (w) => (n && n < w ? `사진 ${n}장 + AI 사진 ${w - n}장으로 ${w}장을 만들어요.` : n > w ? `올린 사진 ${n}장을 다 써서 ${n}장으로 만들어요.` : `사진이 모자라면 AI 사진으로 채워요. 더 올리면 올린 만큼(최대 ${MAX_PHOTOS}장).`);
+  const note = h('p', { class: 'muted small', id: 'photo-count-note' }, noteOf(want));
+  const inp = h('input', { type: 'number', class: 'input count-input', id: 'photo-count-input', inputmode: 'numeric', min: String(MIN_PHOTOS), max: String(MAX_PHOTOS), step: '1', value: String(want), 'aria-label': '캐러셀 장수' });
+  // 칸에 적는 동안(1 → 10 처럼 지나가는 값)은 상태를 바꾸지 않고 안내문만 맞춘다. 칸을 나가거나 Enter 를 치면(change) 그때 확정한다.
+  const valid = () => { const v = Math.round(Number(inp.value)); return Number.isInteger(v) && v >= MIN_PHOTOS && v <= MAX_PHOTOS ? v : null; };
+  inp.addEventListener('input', () => { const v = valid(); if (v != null) note.textContent = noteOf(v); });
+  inp.addEventListener('change', () => commit(valid() ?? want));
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
+  const commit = (v) => { S.photoCount = clampCount(v); saveModePrefs(); fn.renderStage(); maybeAutoFill(); };
   return h('div', { class: 'count-pick', id: 'photo-count-pick-wrap' },
     h('div', { class: 'label' }, '몇 장으로 만들까요?'),
-    h('div', { class: 'chips', id: 'photo-count-pick', role: 'group', 'aria-label': '캐러셀 장수' },
-      ...COUNT_CHOICES.map((c) => h('button', { type: 'button', class: 'chip', 'data-value': String(c), 'aria-pressed': String(c === want), onclick: () => { S.photoCount = c; saveModePrefs(); fn.renderStage(); maybeAutoFill(); } }, `${c}장`))),
-    h('p', { class: 'muted small', id: 'photo-count-note' }, note));
+    h('div', { class: 'count-stepper', id: 'photo-count-pick', role: 'group', 'aria-label': '캐러셀 장수' },
+      h('button', { type: 'button', class: 'btn count-btn', id: 'photo-count-dec', 'aria-label': '한 장 줄이기', disabled: want <= MIN_PHOTOS, onclick: () => commit(want - 1) }, '−'),
+      inp, h('span', { class: 'count-unit' }, '장'),
+      h('button', { type: 'button', class: 'btn count-btn', id: 'photo-count-inc', 'aria-label': '한 장 늘리기', disabled: want >= MAX_PHOTOS, onclick: () => commit(want + 1) }, '+'),
+      h('span', { class: 'muted small' }, `${MIN_PHOTOS}~${MAX_PHOTOS}장`)),
+    note);
 }
 
 /** ai.generate 에 넘길 product (사진 모드). 사진이 모자라면 null */

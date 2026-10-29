@@ -225,7 +225,7 @@ async function startNew({ keepNothing = false } = {}) {
   S.project = null; S.phase = 'start'; S.progress = null; S.chat = [];
   S.newProductBanner = null; S.picker = null; S.sel = null; S.link = ''; S.searchResults = null;
   S.manual = { title: '', price: '', imageId: null, imageIds: [], desc: '' };
-  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; S.autoFillKey = ''; resetIdent();
+  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; S.autoFillKey = ''; S.productRef = null; resetIdent();
   unmountPf();
   closeOverlay();
   clearErrors();
