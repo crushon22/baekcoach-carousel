@@ -199,7 +199,7 @@ async function onMake(kind) {
   if (S.mode === 'photo') {
     if (S.photos.length < MIN_PHOTOS) { toast(`사진을 ${MIN_PHOTOS}장 이상 올려 주세요.`, { kind: 'warn' }); return; }
     const pp = buildProduct();
-    // 적은 장수가 곧 캐러셀 장수: 사진이 더 많으면 AI 가 쓸 사진을 고른다(원본·AI 사진 섞여도)
+    // 적은 장수가 곧 캐러셀 장수: 사진 줄의 앞 N 장(AI 가 세운 순서, 또는 사람이 바꾼 순서)을 쓴다
     const pick = await pickPhotosForMake();
     if (S.phase !== 'start') return;
     pp.imageIds = pick.imageIds;
@@ -230,7 +230,7 @@ async function startNew({ keepNothing = false } = {}) {
   S.project = null; S.phase = 'start'; S.progress = null; S.chat = [];
   S.newProductBanner = null; S.picker = null; S.sel = null; S.link = ''; S.searchResults = null;
   S.manual = { title: '', price: '', imageId: null, imageIds: [], desc: '' };
-  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; S.autoFillKey = ''; S.productRef = null; S.photoPick = null; S.lastPick = null; resetIdent();
+  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; S.autoFillKey = ''; S.productRef = null; S.photoPick = null; S.photoManual = false; S.pickPromise = null; S.picking = false; S.lastPick = null; resetIdent();
   unmountPf();
   closeOverlay();
   clearErrors();
