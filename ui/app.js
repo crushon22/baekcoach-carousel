@@ -29,6 +29,9 @@ export const S = {
   photoStyle: 'outline',   // 사진 캐러셀 글씨 스타일
   photoCount: 5,           // 사진 캐러셀 목표 장수(2~10, 직접 적음). 사진이 모자라면 AI 사진으로 채운다(ui/photo.js maybeAutoFill)
   autoFillKey: '',         // 같은 사진 상태에서 자동 채우기가 두 번 돌지 않게
+  picking: false,          // 만들기 직전 "쓸 사진 고르는 중"(ui/photo.js pickPhotosForMake)
+  photoPick: null,         // {key, result} 같은 사진·장수면 다시 고르지 않게
+  lastPick: null,          // 마지막 만들기에서 고른 정보 {from, want, why} — 결정 띠에 "N장 중 골라서"
   productRef: null,        // 이름으로 찾은 제품 모습 {key(이름), ref:{look,mustKeep,avoid}|null, busy} (ui/photo.js ensureProductRef) — AI 사진 요청·검증에 넣는다
   tease: true,             // 댓글 유도(번호·색상명 숨기기). 기본 켬, 마지막 선택 기억(ui/tease.js)
   ad: {},                  // 광고 표기 설정 {cardnews:{on,position,look,text,size}, photo:{…}} (ui/adlabel.js 의 adCfg 로 읽는다)

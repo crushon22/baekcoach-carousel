@@ -11,7 +11,7 @@ import { COUNT_OPTIONS } from './ui/labels.js';
 import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey, updateMakeEnabled } from './ui/start.js';
 import { renderAiStatus } from './ui/aistatus.js';
 import { identBlock, resetIdent } from './ui/identify.js';
-import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate, maybeAutoFill } from './ui/photo.js';
+import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate, maybeAutoFill, pickPhotosForMake } from './ui/photo.js';
 import { decorateIcons, logoMark, icon } from './ui/icons.js';
 import { renderPreview, schedulePreview } from './ui/preview.js';
 import { adCfg } from './ui/adlabel.js';
@@ -83,7 +83,7 @@ function renderDecisionPhoto(p, locked) {
   const style = p.carousel.overlayStyle || 'outline';
   // 버전·장수는 바꿀 수 없는 정보라 작은 한 줄로, 바꿀 수 있는 스타일만 칩으로 크게(2026-10-28 사용자 의견: "같은 크기면 안 예뻐요")
   const kids = [h('div', { class: 'decide-row decide-photo', role: 'group', 'aria-label': '사진 캐러셀 설정' },
-    h('p', { class: 'decide-meta', id: 'decide-meta' }, h('span', { 'data-kind': 'mode' }, '사진 캐러셀'), h('span', { class: 'decide-sep', 'aria-hidden': 'true' }, '·'), h('span', { 'data-kind': 'count' }, `${n}장`),
+    h('p', { class: 'decide-meta', id: 'decide-meta' }, h('span', { 'data-kind': 'mode' }, '사진 캐러셀'), h('span', { class: 'decide-sep', 'aria-hidden': 'true' }, '·'), h('span', { 'data-kind': 'count' }, S.lastPick?.from > n ? `${n}장 (사진 ${S.lastPick.from}장 중 골라서)` : `${n}장`),
       ...(p.options?.tease ? [h('span', { class: 'decide-sep', 'aria-hidden': 'true' }, '·'), h('span', { 'data-kind': 'tease' }, `댓글 유도 "${p.plan?.commentWord || '나도'}"`)] : [])),
     h('button', { type: 'button', class: 'decide-chip', 'data-kind': 'style', 'aria-expanded': String(S.picker === 'style'), disabled: locked, onclick: () => { S.picker = S.picker === 'style' ? null : 'style'; renderDecision(); } },
       h('span', { class: 'chip-k' }, '스타일'), h('span', { class: 'chip-v' }, STYLE_LABEL[style] || style)))];
@@ -199,6 +199,11 @@ async function onMake(kind) {
   if (S.mode === 'photo') {
     if (S.photos.length < MIN_PHOTOS) { toast(`사진을 ${MIN_PHOTOS}장 이상 올려 주세요.`, { kind: 'warn' }); return; }
     const pp = buildProduct();
+    // 적은 장수가 곧 캐러셀 장수: 사진이 더 많으면 AI 가 쓸 사진을 고른다(원본·AI 사진 섞여도)
+    const pick = await pickPhotosForMake();
+    if (S.phase !== 'start') return;
+    pp.imageIds = pick.imageIds;
+    S.lastPick = pick.picked;
     await startGenerate(pp, { link: S.link || '', options: { mode: 'photo', overlayStyle: S.photoStyle, adLabel: adCfg('photo').on, tease: S.tease !== false } });
     return;
   }
@@ -225,7 +230,7 @@ async function startNew({ keepNothing = false } = {}) {
   S.project = null; S.phase = 'start'; S.progress = null; S.chat = [];
   S.newProductBanner = null; S.picker = null; S.sel = null; S.link = ''; S.searchResults = null;
   S.manual = { title: '', price: '', imageId: null, imageIds: [], desc: '' };
-  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; S.autoFillKey = ''; S.productRef = null; resetIdent();
+  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; S.autoFillKey = ''; S.productRef = null; S.photoPick = null; S.lastPick = null; resetIdent();
   unmountPf();
   closeOverlay();
   clearErrors();
