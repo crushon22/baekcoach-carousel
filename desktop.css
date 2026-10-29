@@ -152,6 +152,8 @@
   html.web #identify-row :is(.identify-q, .identify-brand .muted) { font-size: 14px; }
   html.web #identify-row .identify-brand-k { font-size: 13px; height: 24px; }
   html.web #identify-row .identify-brand .btn-chip { min-height: 32px; font-size: 14px; }
+  html.web .tease-row .tease-sub { font-size: 14px; }
+  html.web .tease-row .tease-text { min-height: 0; }
   html.web body[data-phone] .card-nav-title strong { font-size: 15px; }
   html.web .decide-chip { min-height: 52px; padding: 6px 12px; }
   html.web .decide-chip .chip-k { font-size: 12px; }

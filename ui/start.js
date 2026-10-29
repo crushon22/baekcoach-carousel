@@ -11,6 +11,7 @@ import { modeTabs, renderPhotoStart, buildPhotoProduct, fontCard, photoStrip } f
 import { icon } from './icons.js';
 import { adPanel, adCfg } from './adlabel.js';
 import { identifyRow, identBlock, identTyped } from './identify.js';
+import { teaseRow, refreshTeaseDetail } from './tease.js';
 
 const hasKey = () => !!(S.settings?.has?.[store.aiKeyName(S.settings)] || S.settings?.devMockAI);
 
@@ -206,6 +207,7 @@ function keyNotice() {
 
 function makeButton(label = '만들기') {
   return h('div', { class: 'make-wrap' },
+    teaseRow({ title: currentInfo()?.title || S.manual.title }),
     h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', onclick: () => fn.onMake() }, label),
     h('p', { class: 'muted small center' }, '카드·캡션·쇼츠 대본을 한 번에 만들어요.'));
 }
@@ -413,7 +415,7 @@ function renderWebStart(kids) {
   if (!hasKey()) { kids.push(keyNotice()); return; }
   const title = h('textarea', { id: 'manual-title', class: 'input', rows: 1, placeholder: '예: 무선 핸디 청소기 화이트', 'aria-label': '상품 이름' });
   title.value = S.manual.title;
-  title.addEventListener('input', () => { S.manual.title = title.value; identTyped(); updateMakeEnabled(); fn.schedulePreview(300); });
+  title.addEventListener('input', () => { S.manual.title = title.value; identTyped(); refreshTeaseDetail(title.value); updateMakeEnabled(); fn.schedulePreview(300); });
   const price = h('input', { id: 'manual-price', class: 'input', inputmode: 'numeric', placeholder: '예: 59900 (모르면 비워 두세요)', 'aria-label': '가격' });
   price.value = S.manual.price;
   price.addEventListener('input', () => { S.manual.price = price.value; });
@@ -424,6 +426,7 @@ function renderWebStart(kids) {
     h('div', { class: 'form' },
       h('label', { class: 'label', for: 'manual-title' }, '상품 이름'), title,
       identifyRow({ ids: S.manual.imageIds, inputId: 'manual-title' }),
+      teaseRow({ title: S.manual.title }),
       photoBlock(S.manual.imageIds, { label: '상품 사진 (선택)' }))),
   h('section', { class: 'extra', id: 'web-extra' },
     h('div', { class: 'form' },

@@ -68,9 +68,13 @@ export function renderReview() {
 
   const formatSection = fm.length ? h('details', { class: 'plain', id: 'format-section', open: fm.length <= 3 },
     h('summary', null, `⚠️ 형식 점검 ${fm.length}건`),
-    h('ul', { class: 'format-list' }, ...fm.map((x) => h('li', null,
+    h('ul', { class: 'format-list' }, ...fm.map((x) => h('li', { 'data-kind': x.kind || '', 'data-issue': x.id },
       h('div', null, h('strong', null, x.cardNo ? `카드 ${x.cardNo}` : (x.target === 'caption' ? '캡션' : '전체')), ' ', x.text),
       x.why ? h('div', { class: 'muted small' }, x.why) : null,
+      // 숨긴 제품 정보가 새어 나온 줄(댓글 유도): 그 글자만 빼거나 줄째 뺄 수 있다
+      x.kind === 'identity_leak' ? h('div', { class: 'btn-row' },
+        x.fix_soften ? h('button', { type: 'button', class: 'btn', 'data-fix': 'soften', disabled: ui.busy.has(x.id), onclick: () => fix(x, 'soften') }, `"${x.fix_soften}"로 바꾸기`) : null,
+        h('button', { type: 'button', class: 'btn', 'data-fix': 'delete', disabled: ui.busy.has(x.id), onclick: () => fix(x, 'delete') }, '그 줄 빼기')) : null,
       x.cardIndex >= 0 ? h('button', { type: 'button', class: 'btn', onclick: () => gotoCard(x.cardIndex) }, '그 카드로') : null)))) : null;
 
   const fiInfo = p.factsInfo;

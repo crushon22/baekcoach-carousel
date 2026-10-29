@@ -12,6 +12,7 @@ import { fontDetails, pickStartFont } from './fontpick.js';
 import { adPanel, adCfg, adFields } from './adlabel.js';
 import { openImageTool } from './imagetools.js';
 import { identifyRow, identTyped } from './identify.js';
+import { teaseRow, refreshTeaseDetail } from './tease.js';
 import { TRANSFORMS } from '../lib/imageprompt.js';
 
 export const STYLES = [
@@ -34,6 +35,7 @@ export async function loadModePrefs() {
     if (m?.ad && typeof m.ad === 'object') S.ad = m.ad;
     else if (typeof m?.adLabel === 'boolean') S.ad = { photo: { on: m.adLabel } };
     if (typeof m?.font === 'string') S.font = m.font;
+    if (typeof m?.tease === 'boolean') S.tease = m.tease;
   } catch { /* 기억 못 해도 기본값 */ }
 }
 export function fontCard() {
@@ -43,7 +45,7 @@ export function fontCard() {
 }
 
 export function saveModePrefs() {
-  store.kvSet('panel.mode', { mode: S.mode, style: S.photoStyle, ad: S.ad, font: S.font }).catch(() => {});
+  store.kvSet('panel.mode', { mode: S.mode, style: S.photoStyle, ad: S.ad, font: S.font, tease: S.tease !== false }).catch(() => {});
 }
 
 // ───────────────────────── 작은 그림(예시·스타일 미리보기) ─────────────────────────
@@ -267,11 +269,12 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
   const pageProduct = !IS_WEB && S.rec?.product;
   const title = h('input', { id: 'photo-title', class: 'input', placeholder: '예: 무선 핸디 청소기', 'aria-label': '상품 이름 (선택)' });
   title.value = S.manual.title;
-  title.addEventListener('input', () => { S.manual.title = title.value; identTyped(); fn.updateMakeEnabled?.(); fn.schedulePreview(300); });
+  title.addEventListener('input', () => { S.manual.title = title.value; identTyped(); refreshTeaseDetail(title.value); fn.updateMakeEnabled?.(); fn.schedulePreview(300); });
   kids.push(h('section', { class: 'field-block', id: 'photo-start' },
     pageProduct ? null : h('label', { class: 'label', for: 'photo-title' }, '상품 이름 (선택)'),
     pageProduct ? null : title,
     pageProduct ? null : identifyRow({ ids: S.photos, inputId: 'photo-title', optional: true }),
+    teaseRow({ title: pageProduct ? S.rec.product.title : S.manual.title }),
     h('div', { class: 'label label-row' }, h('span', null, '사진'), h('span', { class: 'muted small', id: 'photo-count' }, `${n}장 · 2~${MAX_PHOTOS}장`)),
     photoStrip(S.photos, { key: 'photo', listId: 'photo-list', uploadId: 'btn-photo-upload', firstLabel: '커버', onAdd: uploadPhotos }),
     h('p', { class: 'muted small', id: 'photo-drop-hint' }, '사진을 끌어다 놓거나 붙여 넣기(Ctrl+V · ⌘V)로도 넣을 수 있어요. 사진을 누르면 AI로 바꿀 수 있어요.'),
