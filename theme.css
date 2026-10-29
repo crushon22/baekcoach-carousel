@@ -635,6 +635,8 @@ body.drop-over #stage { outline: 3px dashed var(--blue); outline-offset: -6px; b
 .identify-row .identify-acts .btn-primary .ico { color: #fff; }
 .identify-row .identify-acts .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
 .make-gate { margin: 0; color: var(--sub); }
+.count-pick { display: grid; gap: 6px; }
+.count-pick .chips .chip[aria-pressed="true"] { font-weight: 600; }
 /* 검수 탭 · 카드별 검수: 카드 글 줄 */
 .card-check { display: grid; gap: 8px; }
 .card-lines { margin: 0; padding: 10px 12px; list-style: none; border-radius: 10px; background: var(--zone); color: var(--ink); }

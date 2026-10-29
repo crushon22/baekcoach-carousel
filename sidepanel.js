@@ -11,7 +11,7 @@ import { COUNT_OPTIONS } from './ui/labels.js';
 import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey, updateMakeEnabled } from './ui/start.js';
 import { renderAiStatus } from './ui/aistatus.js';
 import { identBlock, resetIdent } from './ui/identify.js';
-import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate } from './ui/photo.js';
+import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate, maybeAutoFill } from './ui/photo.js';
 import { decorateIcons, logoMark, icon } from './ui/icons.js';
 import { renderPreview, schedulePreview } from './ui/preview.js';
 import { adCfg } from './ui/adlabel.js';
@@ -225,7 +225,7 @@ async function startNew({ keepNothing = false } = {}) {
   S.project = null; S.phase = 'start'; S.progress = null; S.chat = [];
   S.newProductBanner = null; S.picker = null; S.sel = null; S.link = ''; S.searchResults = null;
   S.manual = { title: '', price: '', imageId: null, imageIds: [], desc: '' };
-  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; resetIdent();
+  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; S.autoFillKey = ''; resetIdent();
   unmountPf();
   closeOverlay();
   clearErrors();
@@ -242,7 +242,7 @@ function onCardIndex() { onCardIndexChanged(); if (S.tab === 'review' && S.phase
 
 Object.assign(fn, {
   render, renderStrip, renderStage, renderModebar, renderPreview, schedulePreview, renderProgress, renderDecision, renderNotices, renderTab, openTab, onMake, makeFromShorts, startNew, openOptions,
-  regenerate, startGenerate, updateMakeEnabled, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, saveModePrefs, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
+  regenerate, startGenerate, updateMakeEnabled, maybeAutoFill, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, saveModePrefs, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
 });
 
 // ───────────────────────── 시작 ─────────────────────────

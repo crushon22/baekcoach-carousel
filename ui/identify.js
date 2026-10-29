@@ -137,6 +137,7 @@ async function run(ids, { inputId, optional, manual = false }) {
     if (manual || ['NO_KEY', 'KEY_INVALID', 'BILLING', 'FORBIDDEN'].includes(e?.code)) showError(e);
     Object.assign(S.ident, { status: 'failed', note: '사진으로 이름을 알아보지 못했어요. 이름을 직접 적어 주세요.' });
     sync();
+    fn.maybeAutoFill?.();   // 알아보기를 못 해도 사진 채우기는 진행한다(제품 모습 없이)
     return;
   }
   if (my !== token) return;
@@ -151,6 +152,7 @@ async function run(ids, { inputId, optional, manual = false }) {
     Object.assign(S.ident, { status: 'unknown', why: r.why || '', similar: r.similar || '' });
   }
   sync();
+  fn.maybeAutoFill?.();   // 제품 모습(look)을 알았으니 이제 모자란 사진을 AI 로 채운다
 }
 
 function confirm() {
