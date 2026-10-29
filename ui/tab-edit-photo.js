@@ -261,9 +261,8 @@ export function startRewrite() { return rewrite(document.getElementById('tab-edi
 function rewriteList(rw, host) {
   if (!rw.variants.length) return h('p', { class: 'muted' }, '새로 쓴 안이 없어요. 한 번 더 눌러 보세요.');
   return h('ul', { class: 'variant-list', id: 'variant-list' }, ...rw.variants.map((v, k) => h('li', { class: 'variant' },
-    h('div', { class: 'variant-head' }, h('strong', null, v.style), h('span', { class: 'muted small' }, STYLE_HELP[v.style] || ''), v.factIssues?.length ? h('span', { class: 'badge badge-warn' }, `🔎 ${v.factIssues.length}`) : null),
+    h('div', { class: 'variant-head' }, h('strong', null, v.style), h('span', { class: 'muted small' }, STYLE_HELP[v.style] || '')),
     h('div', { class: 'variant-text' }, h('div', { class: 'variant-body' }, (v.card.overlay?.lines || String(v.card.headline || '').split('\n')).join('\n'))),
-    v.factIssues?.length ? h('p', { class: 'warn-line' }, '근거 없는 말이 있을 수 있어요. 쓴 뒤 근거·검수 탭에서 확인하세요.') : null,
     h('button', { type: 'button', class: 'btn', 'data-variant': k, onclick: () => applyVariant(rw.index, v, host) }, '이 안 쓰기'))));
 }
 

@@ -67,7 +67,7 @@ function issueLi(x, { showWhere }) {
   return h('li', { 'data-kind': x.kind || '', 'data-issue': x.id, 'data-card': x.cardIndex },
     h('div', null, showWhere ? h('strong', null, where(x)) : null, showWhere ? ' ' : null, x.text),
     x.why ? h('div', { class: 'muted small' }, x.why) : null,
-    x.kind === 'identity_leak' ? h('div', { class: 'btn-row' },
+    x.kind === 'identity_leak' && x.key !== 'hashtag' ? h('div', { class: 'btn-row' },
       x.fix_soften ? h('button', { type: 'button', class: 'btn', 'data-fix': 'soften', disabled: busy, onclick: () => fix(x, 'soften') }, `"${x.fix_soften}"로 바꾸기`) : null,
       h('button', { type: 'button', class: 'btn', 'data-fix': 'delete', disabled: busy, onclick: () => fix(x, 'delete') }, '그 줄 빼기')) : null,
     showWhere && x.cardIndex >= 0 ? h('button', { type: 'button', class: 'btn', onclick: () => gotoCard(x.cardIndex) }, '그 카드로') : null,

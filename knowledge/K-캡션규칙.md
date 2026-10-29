@@ -27,5 +27,5 @@
 
 ## 출력
 ```json
-{"caption":"...", "hashtags":["#..."], "disclosure":"#광고" | "" }
+{"caption":"...", "hashtags":["#..."]}
 ```

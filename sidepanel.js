@@ -67,12 +67,12 @@ function renderDecision() {
     ...(p.input?.title ? [chip('tease', '댓글 유도', p.options?.tease ? `켬 · "${p.plan?.commentWord || '나도'}"` : '끔')] : []))];
   if (S.picker && !locked) {
     const opts = S.picker === 'type' ? Object.entries(TYPE_LABELS).map(([k, v]) => [k, v, k === p.plan.type])
-      : S.picker === 'purpose' ? PURPOSES.map((v) => [v, v, v === p.plan.purpose])
+      : S.picker === 'purpose' ? PURPOSES.filter((v) => !p.options?.tease || ['댓글', 'DM·문의'].includes(v)).map((v) => [v, v, v === p.plan.purpose])   // 댓글 유도가 켜져 있으면 저장·링크·팔로우는 CTA 와 어긋나 고를 수 없다
       : S.picker === 'tease' ? [['on', '켬 · 번호·색상명 숨김', !!p.options?.tease], ['off', '끔 · 이름 그대로', !p.options?.tease]]
         : COUNT_OPTIONS.map((n) => [n, `${n}장`, n === (p.plan.count || p.carousel.cards.length)]);
     kids.push(h('div', { class: 'picker', id: 'decide-picker' },
       h('div', { class: 'chips' }, ...opts.map(([val, label, on]) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(on), 'data-value': val, onclick: () => pick(S.picker, val, on) }, label))),
-      h('p', { class: 'muted small' }, '바꾸면 근거 자료는 그대로 두고 카드를 새로 써요. 직접 고친 글은 사라지고, 사진은 같은 자리면 유지돼요. 유지하지 못한 사진은 위 안내에 한 줄 남아요.')));
+      h('p', { class: 'muted small' }, (S.picker === 'purpose' && p.options?.tease ? '댓글 유도가 켜져 있어 목적은 댓글·DM 중에서 골라요. ' : '') + '바꾸면 조사한 정보는 그대로 두고 카드를 새로 써요. 직접 고친 글은 사라지고, 사진은 같은 자리면 유지돼요. 유지하지 못한 사진은 위 안내에 한 줄 남아요.')));
   }
   setChildren(el.decision, ...kids);
 }
@@ -204,7 +204,8 @@ async function onMake(kind) {
   }
   const product = buildProduct(IS_WEB ? S.webKind : undefined);
   if (!product) { toast(IS_WEB && S.webKind === 'topic' ? '주제를 먼저 적어 주세요.' : '상품 이름이나 주제를 먼저 적어 주세요.', { kind: 'warn' }); document.getElementById(IS_WEB && S.webKind === 'topic' ? 'topic-text' : 'manual-title')?.focus(); return; }
-  await startGenerate(product, { link: S.link || '', options: product.source === 'topic' ? {} : { tease: S.tease !== false } });
+  // 광고 표기 값을 처음부터 보내야 첫 점수(광고 표기 −20)와 내보내기 확인이 어긋나지 않는다
+  await startGenerate(product, { link: S.link || '', options: { adLabel: adCfg('cardnews').on, ...(product.source === 'topic' ? {} : { tease: S.tease !== false }) } });
 }
 
 async function makeFromShorts(script) {

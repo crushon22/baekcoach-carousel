@@ -206,8 +206,10 @@ function keyNotice() {
 }
 
 function makeButton(label = '만들기') {
+  // 댓글 유도 스위치는 상품으로 만들 때만(쿠팡 페이지·검색 결과·읽기 실패 폴백). 상품 페이지가 아닌 채팅 모드의 글은 주제(topic)라 뜻이 없다
+  const productLike = !!(S.rec?.product || S.sel?.kind === 'search' || (S.rec && !S.rec.product && S.rec.reason === 'CAPTURE_FAILED'));
   return h('div', { class: 'make-wrap' },
-    teaseRow({ title: currentInfo()?.title || S.manual.title }),
+    productLike ? teaseRow({ title: currentInfo()?.title || S.manual.title }) : null,
     h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', onclick: () => fn.onMake() }, label),
     h('p', { class: 'muted small center' }, '카드와 캡션을 한 번에 만들어요.'));
 }
@@ -219,6 +221,7 @@ function manualForm({ withPrice, titleLabel, titleHint, note }) {
   title.addEventListener('input', () => {
     S.manual.title = title.value;
     const t = document.getElementById('strip-title'); if (t) t.textContent = title.value.trim() || '(상품 이름을 적어 주세요)';
+    refreshTeaseDetail(title.value);
     updateMakeEnabled();
     fn.schedulePreview(300);
   });

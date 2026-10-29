@@ -20,7 +20,6 @@ export const AD_LOOKS = [
 export const AD_TEXTS = ['[광고]', '광고', '#광고', '유료 광고'];
 export const AD_SIZES = [{ value: 's', label: '작게', text: '작게' }, { value: 'm', label: '보통', text: '보통' }, { value: 'l', label: '크게', text: '크게' }];
 
-/** 기본값: 카드뉴스는 표시 없음, 사진 캐러셀은 왼쪽 위 · 바탕 상자 */
 // 광고 표기는 카드뉴스·사진 캐러셀 모두 기본 켬(2026-10-29 사용자 결정: 파트너스 글이라 표기는 필수, 캡션 고지문은 뺌)
 export const defaultAd = (mode) => ({ on: true, position: 'tl', look: 'box', text: '[광고]', size: 'm', color: null, mode });
 export const adCfg = (mode = S.mode) => (S.ad[mode] = { ...defaultAd(mode), ...(S.ad[mode] || {}) });
@@ -73,7 +72,8 @@ export function adPanel({ cfg, onChange, lowContrast = false, hasLink = false })
     kids.push(adColorRow(cfg, onChange));
     if (lowContrast) kids.push(adContrastLine(cfg));
   } else {
-    kids.push(h('p', { class: 'warn-line small', id: 'ad-off-note' }, hasLink ? '파트너스 링크가 있는 글이에요. 표시를 권장해요.' : '파트너스 게시물이면 표시를 권장해요.'));
+    kids.push(h('p', { class: 'warn-line small', id: 'ad-off-note' }, '파트너스 글이라 광고 표기는 켜 두세요. 끄면 점수와 내보내기 확인에 경고가 떠요.'));
+    void hasLink;
   }
   return h('div', { class: 'ad-panel', id: 'ad-panel' }, ...kids);
 }

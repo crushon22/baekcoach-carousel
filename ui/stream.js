@@ -11,7 +11,7 @@ const now = () => performance.now();
 function skeletonProject(product, { link, options = {} }) {
   const photo = options.mode === 'photo';
   return {
-    title: '', input: product, options: {}, plan: null, link: link || '',
+    title: '', input: product, options: { ...options }, plan: null, link: link || '',   // 만드는 동안에도 결정 띠가 댓글 유도 켬/끔을 바로 보여 준다
     carousel: {
       type: '', template: 'basic', brandColor: BRAND, accountName: S.settings?.accountName || '', ...(S.settings?.logoImageId ? { logoImageId: S.settings.logoImageId } : {}),
       peek: false, panorama: false, hasPartnersLink: !!link, cards: [],
@@ -69,14 +69,14 @@ function makeHandler(mode, t0, part) {
       } else if (event === 'caption') {
         p.caption = data.caption || ''; p.hashtags = data.hashtags || [];
         S.pf?.setCaption(composed()?.text || '');
-        if (mode === 'full') setProgress('근거를 확인하는 중');
+        if (mode === 'full') setProgress('점검하는 중');
       } else if (event === 'review') {
         p.issues = data.issues || [];
         updateStatus();
       } else if (event === 'score') {
         p.score = data;
         updateStatus();
-        if (mode === 'full') setProgress('쇼츠 대본을 쓰는 중');
+        if (mode === 'full') setProgress('마무리하는 중');
       } else if (event === 'shorts') {
         p.shorts = data;
       }

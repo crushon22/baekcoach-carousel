@@ -45,7 +45,7 @@ async function computeChecks() {
         ? `${lowCards.length === cards().length ? '모든 카드' : lowCards.map((i) => i + 1).join('·') + '번 카드'}에서 ${Object.keys(LOW_NAME).filter((k) => lowKinds.has(k)).map((k) => LOW_NAME[k]).join('·')} 색이 배경과 비슷해서 잘 안 보일 수 있어요.`
         : '글씨와 배경 색이 충분히 달라요.',
       go: lowCards.length ? { label: '색 고치러 가기', run: () => openDesign() } : null },
-    { key: 'tags', ok: tags >= 1 && tags <= HASHTAG_MAX, title: `해시태그 3~${HASHTAG_MAX}개`, detail: tags > HASHTAG_MAX ? `${tags}개예요. ${tags - HASHTAG_MAX}개를 줄여 주세요.` : tags ? `${tags}개예요.` : '해시태그가 없어요.', go: tags > HASHTAG_MAX || !tags ? { label: '해시태그 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
+    { key: 'tags', ok: tags >= 1 && tags <= HASHTAG_MAX, title: `해시태그 ${HASHTAG_MAX}개 이하`, detail: tags > HASHTAG_MAX ? `${tags}개예요. ${tags - HASHTAG_MAX}개를 줄여 주세요.` : tags ? `${tags}개예요.` : '해시태그가 없어요.', go: tags > HASHTAG_MAX || !tags ? { label: '해시태그 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
   ];
   return { items, overflow };
 }
