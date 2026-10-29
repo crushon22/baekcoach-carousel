@@ -613,3 +613,18 @@ body.drop-over #stage { outline: 3px dashed var(--blue); outline-offset: -6px; b
 .identify-row .btn .ico { color: var(--blue); }
 .identify-note { margin: 0; flex: 1 1 200px; }
 .identify-note:empty { display: none; }
+.identify-busy { margin: 0; display: inline-flex; align-items: center; gap: 8px; color: var(--sub); font-size: 16px; min-height: 44px; }
+.identify-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); animation: identify-pulse 1s ease-in-out infinite; }
+@keyframes identify-pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .identify-dot { animation: none; } }
+/* 이게 맞나요? — 확인해야 만들기가 켜진다 */
+.identify-ask { flex: 1 1 100%; display: grid; gap: 4px; padding: 14px 16px; border: 1.5px solid var(--blue); border-radius: 14px; background: color-mix(in srgb, var(--blue) 5%, #fff); }
+.identify-ask.identify-unknown { border-color: var(--line); background: var(--zone); }
+.identify-ask p { margin: 0; }
+.identify-q { color: var(--sub); font-size: 16px; }
+.identify-name { font-size: 20px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; line-height: 1.3; }
+.identify-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.identify-row .identify-acts .btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.identify-row .identify-acts .btn-primary .ico { color: #fff; }
+.identify-row .identify-acts .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
+.make-gate { margin: 0; color: var(--sub); }

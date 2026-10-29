@@ -11,7 +11,7 @@ import { icon } from './icons.js';
 import { fontDetails, pickStartFont } from './fontpick.js';
 import { adPanel, adCfg, adFields } from './adlabel.js';
 import { openImageTool } from './imagetools.js';
-import { identifyRow } from './identify.js';
+import { identifyRow, identTyped } from './identify.js';
 import { TRANSFORMS } from '../lib/imageprompt.js';
 
 export const STYLES = [
@@ -267,11 +267,11 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
   const pageProduct = !IS_WEB && S.rec?.product;
   const title = h('input', { id: 'photo-title', class: 'input', placeholder: '예: 무선 핸디 청소기', 'aria-label': '상품 이름 (선택)' });
   title.value = S.manual.title;
-  title.addEventListener('input', () => { S.manual.title = title.value; fn.schedulePreview(300); });
+  title.addEventListener('input', () => { S.manual.title = title.value; identTyped(); fn.updateMakeEnabled?.(); fn.schedulePreview(300); });
   kids.push(h('section', { class: 'field-block', id: 'photo-start' },
     pageProduct ? null : h('label', { class: 'label', for: 'photo-title' }, '상품 이름 (선택)'),
     pageProduct ? null : title,
-    pageProduct ? null : identifyRow({ ids: S.photos, inputId: 'photo-title' }),
+    pageProduct ? null : identifyRow({ ids: S.photos, inputId: 'photo-title', optional: true }),
     h('div', { class: 'label label-row' }, h('span', null, '사진'), h('span', { class: 'muted small', id: 'photo-count' }, `${n}장 · 2~${MAX_PHOTOS}장`)),
     photoStrip(S.photos, { key: 'photo', listId: 'photo-list', uploadId: 'btn-photo-upload', firstLabel: '커버', onAdd: uploadPhotos }),
     h('p', { class: 'muted small', id: 'photo-drop-hint' }, '사진을 끌어다 놓거나 붙여 넣기(Ctrl+V · ⌘V)로도 넣을 수 있어요. 사진을 누르면 AI로 바꿀 수 있어요.'),

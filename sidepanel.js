@@ -8,9 +8,9 @@ import { showError, clearErrors } from './ui/errors.js';
 import { TYPE_LABELS } from './ui/labels.js';
 import { PURPOSES } from './lib/ai-util.js';
 import { COUNT_OPTIONS } from './ui/labels.js';
-import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey } from './ui/start.js';
+import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey, updateMakeEnabled } from './ui/start.js';
 import { renderAiStatus } from './ui/aistatus.js';
-import { autoIdentify } from './ui/identify.js';
+import { identBlock, resetIdent } from './ui/identify.js';
 import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate } from './ui/photo.js';
 import { decorateIcons, logoMark, icon } from './ui/icons.js';
 import { renderPreview, schedulePreview } from './ui/preview.js';
@@ -189,16 +189,15 @@ async function onMake(kind) {
   if (S.phase === 'generating') return;
   if (IS_WEB) S.webKind = kind === 'topic' ? 'topic' : 'manual';
   if (!hasKey()) { renderStage(); document.getElementById('nokey')?.scrollIntoView({ block: 'center' }); return; }
+  // 사진으로 찾은 이름을 아직 확인하지 않았으면 만들지 않는다(버튼도 꺼져 있다)
+  const gate = kind === 'topic' ? '' : identBlock();
+  if (gate) { toast(gate, { kind: 'warn' }); document.getElementById('identify-row')?.scrollIntoView({ block: 'center' }); return; }
   if (S.mode === 'photo') {
     if (S.photos.length < MIN_PHOTOS) { toast(`사진을 ${MIN_PHOTOS}장 이상 올려 주세요.`, { kind: 'warn' }); return; }
-    // 이름이 비어 있으면 사진으로 한 번 알아본다(모르면 사진만 보고 쓴다)
-    if (!(S.manual.title || '').trim() && !(!IS_WEB && S.rec?.product)) await autoIdentify(S.photos);
     const pp = buildProduct();
     await startGenerate(pp, { link: S.link || '', options: { mode: 'photo', overlayStyle: S.photoStyle, adLabel: adCfg('photo').on } });
     return;
   }
-  // 웹 상품 칸: 이름 없이 사진만 있으면 사진으로 이름을 알아본다
-  if (IS_WEB && S.webKind !== 'topic' && !(S.manual.title || '').trim() && S.manual.imageIds?.length) await autoIdentify(S.manual.imageIds);
   const product = buildProduct(IS_WEB ? S.webKind : undefined);
   if (!product) { toast(IS_WEB && S.webKind === 'topic' ? '주제를 먼저 적어 주세요.' : '상품 이름이나 주제를 먼저 적어 주세요.', { kind: 'warn' }); document.getElementById(IS_WEB && S.webKind === 'topic' ? 'topic-text' : 'manual-title')?.focus(); return; }
   await startGenerate(product, { link: S.link || '' });
@@ -221,7 +220,7 @@ async function startNew({ keepNothing = false } = {}) {
   S.project = null; S.phase = 'start'; S.progress = null; S.chat = [];
   S.newProductBanner = null; S.picker = null; S.sel = null; S.link = ''; S.searchResults = null;
   S.manual = { title: '', price: '', imageId: null, imageIds: [], desc: '' };
-  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; S.identifyNote = '';
+  S.topic = ''; S.topicImageIds = []; S.webKind = 'manual'; S.photos = []; resetIdent();
   unmountPf();
   closeOverlay();
   clearErrors();
@@ -238,7 +237,7 @@ function onCardIndex() { onCardIndexChanged(); if (S.tab === 'review' && S.phase
 
 Object.assign(fn, {
   render, renderStrip, renderStage, renderModebar, renderPreview, schedulePreview, renderProgress, renderDecision, renderNotices, renderTab, openTab, onMake, makeFromShorts, startNew, openOptions,
-  regenerate, startGenerate, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, saveModePrefs, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
+  regenerate, startGenerate, updateMakeEnabled, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, saveModePrefs, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
 });
 
 // ───────────────────────── 시작 ─────────────────────────

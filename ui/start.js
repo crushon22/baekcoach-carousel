@@ -10,7 +10,7 @@ import { showError } from './errors.js';
 import { modeTabs, renderPhotoStart, buildPhotoProduct, fontCard, photoStrip } from './photo.js';
 import { icon } from './icons.js';
 import { adPanel, adCfg } from './adlabel.js';
-import { identifyRow } from './identify.js';
+import { identifyRow, identBlock, identTyped } from './identify.js';
 
 const hasKey = () => !!(S.settings?.has?.[store.aiKeyName(S.settings)] || S.settings?.devMockAI);
 
@@ -234,9 +234,17 @@ function manualForm({ withPrice, titleLabel, titleHint, note }) {
     !info?.imageId ? h('button', { type: 'button', class: 'btn btn-block', id: 'btn-upload-form', onclick: uploadPhoto }, '사진 올리기 (선택)') : null);
 }
 
-function updateMakeEnabled() {
+/** 만들기 버튼 켜기/끄기. 사진으로 찾은 이름을 아직 확인 안 했으면 꺼 두고 이유를 버튼 아래에 적는다 */
+export function updateMakeEnabled() {
   const b = document.getElementById('btn-make');
-  if (b) b.disabled = !buildProduct(IS_WEB ? 'manual' : undefined);
+  if (b) {
+    const gate = identBlock();
+    b.disabled = !!gate || !buildProduct(IS_WEB ? 'manual' : undefined);
+    const wrap = b.closest('.make-wrap');
+    let note = document.getElementById('make-gate');
+    if (gate && wrap && !note) { note = h('p', { class: 'make-gate small center', id: 'make-gate', 'aria-live': 'polite' }); b.after(note); }
+    if (note) { note.textContent = gate; note.hidden = !gate; }
+  }
   const t = document.getElementById('btn-make-topic');
   if (t) t.disabled = !buildProduct('topic');
 }
@@ -405,7 +413,7 @@ function renderWebStart(kids) {
   if (!hasKey()) { kids.push(keyNotice()); return; }
   const title = h('textarea', { id: 'manual-title', class: 'input', rows: 1, placeholder: '예: 무선 핸디 청소기 화이트', 'aria-label': '상품 이름' });
   title.value = S.manual.title;
-  title.addEventListener('input', () => { S.manual.title = title.value; updateMakeEnabled(); fn.schedulePreview(300); });
+  title.addEventListener('input', () => { S.manual.title = title.value; identTyped(); updateMakeEnabled(); fn.schedulePreview(300); });
   const price = h('input', { id: 'manual-price', class: 'input', inputmode: 'numeric', placeholder: '예: 59900 (모르면 비워 두세요)', 'aria-label': '가격' });
   price.value = S.manual.price;
   price.addEventListener('input', () => { S.manual.price = price.value; });
