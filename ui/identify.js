@@ -80,6 +80,11 @@ function rowKids(st) {
     return [h('div', { class: 'identify-ask identify-unknown', id: 'identify-ask' },
       h('p', { class: 'identify-q' }, '사진만으로는 어떤 상품인지 모르겠어요'),
       h('p', { class: 'muted small identify-why' }, it.why ? `${it.why} 이름을 직접 적어 주세요.` : '이름을 직접 적어 주세요.'),
+      // 모르더라도 보이는 것은 말한다(지어내지 않고): 색·형태·재질, 그리고 비슷해 보이는 제품(확신 낮음)
+      it.look ? h('p', { class: 'identify-brand', id: 'identify-look' }, h('span', { class: 'identify-brand-k' }, '보이는 모습'), it.look) : null,
+      it.similar ? h('div', { class: 'identify-brand', id: 'identify-similar', 'data-from': 'shape' },
+        h('p', null, h('span', { class: 'identify-brand-k' }, '비슷해 보이는 제품'), h('b', null, it.similar), h('span', { class: 'muted' }, '확실하지 않은 추정이에요')),
+        h('button', { type: 'button', class: 'btn btn-chip', id: 'btn-ident-similar', onclick: useSimilar }, '이 이름으로 적기')) : null,
       h('div', { class: 'identify-acts' },
         h('button', { type: 'button', class: 'btn', id: 'btn-ident-edit', onclick: editName }, '이름 적기'),
         it.optional ? h('button', { type: 'button', class: 'btn', id: 'btn-ident-skip', onclick: skip }, '이름 없이 만들기') : null))];
@@ -135,6 +140,7 @@ async function run(ids, { inputId, optional, manual = false }) {
     return;
   }
   if (my !== token) return;
+  S.ident.look = r.look || '';   // 보이는 모습(색·형태·재질) — AI 사진 만들 때 지킬 기준
   if (r.known) {
     S.manual.title = r.name;
     const inp = document.getElementById(S.ident.inputId);
@@ -142,7 +148,7 @@ async function run(ids, { inputId, optional, manual = false }) {
     Object.assign(S.ident, { status: 'ask', name: r.name, base: r.base || r.name, brand: r.brand || null, brandOn: r.brand?.from === 'logo', confidence: r.confidence, evidence: r.evidence || '' });
     fn.schedulePreview?.(200);
   } else {
-    Object.assign(S.ident, { status: 'unknown', why: r.why || '' });
+    Object.assign(S.ident, { status: 'unknown', why: r.why || '', similar: r.similar || '' });
   }
   sync();
 }
@@ -159,6 +165,19 @@ function editName() {
   if (!inp) return;
   inp.focus();
   inp.select?.();
+}
+
+/** 모르겠다는 답의 "비슷해 보이는 제품"을 이름으로 쓴다(추정 표시는 안내문으로 남긴다) */
+function useSimilar() {
+  const it = S.ident;
+  if (!it?.similar) return;
+  S.manual.title = it.similar;
+  const inp = document.getElementById(it.inputId);
+  if (inp) inp.value = it.similar;
+  Object.assign(it, { status: 'ok', name: it.similar, note: '비슷해 보이는 제품의 이름이에요(추정). 틀리면 고쳐 주세요.' });
+  fn.schedulePreview?.(200);
+  sync();
+  fn.updateMakeEnabled?.();
 }
 
 function skip() {

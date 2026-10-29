@@ -25,8 +25,7 @@ async function computeChecks() {
   for (let i = 0; i < cards().length; i++) {
     const m = await cardMeta(i);
     if (m?.overflow) overflow.push(i);
-    const low = (m?.lowContrast || []).filter((k) => LOW_NAME[k]);
-    if (low.length) { lowCards.push(i); low.forEach((k) => lowKinds.add(k)); }
+    void lowCards; void lowKinds;   // "잘 보이는 글씨 색" 항목은 뺐다(2026-10-29 사용자 요청: 잘 보이는데 경고가 떠서)
   }
   const warn = (code) => c.warnings.find((w) => w.code === code);
   const leaks = formatIssues().filter((i) => i.kind === 'identity_leak').length;
@@ -40,11 +39,6 @@ async function computeChecks() {
     ...(p.options?.tease ? [{ key: 'leak', ok: leaks === 0, title: '번호·색상명 숨김', detail: leaks ? `숨기기로 한 제품 정보가 ${leaks}곳에 그대로 있어요.` : '카드와 캡션에 번호·색상명이 없어요. 댓글이 달리면 DM으로 링크를 보내 주세요.', go: leaks ? { label: '검수 열기', run: () => fn.openTab('review', { scroll: true }) } : null }] : []),
     { key: 'volatile', ok: !warn('VOLATILE_CLAIM'), title: '바뀔 수 있는 표현(배송·최저가)', detail: warn('VOLATILE_CLAIM')?.messageKo || '캡션에 로켓배송·최저가 같은 표현이 없어요.', go: warn('VOLATILE_CLAIM') ? { label: '캡션 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
     { key: 'overflow', ok: overflow.length === 0, title: '카드 글자 넘침', detail: overflow.length ? `${overflow.map((i) => i + 1).join('·')}번 카드의 글이 칸을 넘쳐요.` : '모든 카드의 글이 칸 안에 들어가요.', go: overflow.length ? { label: `${overflow[0] + 1}번 카드 고치기`, run: () => fn.gotoCard(overflow[0]) } : null },
-    { key: 'contrast', ok: lowCards.length === 0, title: '잘 보이는 글씨 색',
-      detail: lowCards.length
-        ? `${lowCards.length === cards().length ? '모든 카드' : lowCards.map((i) => i + 1).join('·') + '번 카드'}에서 ${Object.keys(LOW_NAME).filter((k) => lowKinds.has(k)).map((k) => LOW_NAME[k]).join('·')} 색이 배경과 비슷해서 잘 안 보일 수 있어요.`
-        : '글씨와 배경 색이 충분히 달라요.',
-      go: lowCards.length ? { label: '색 고치러 가기', run: () => openDesign() } : null },
     { key: 'tags', ok: tags >= 1 && tags <= HASHTAG_MAX, title: `해시태그 ${HASHTAG_MAX}개 이하`, detail: tags > HASHTAG_MAX ? `${tags}개예요. ${tags - HASHTAG_MAX}개를 줄여 주세요.` : tags ? `${tags}개예요.` : '해시태그가 없어요.', go: tags > HASHTAG_MAX || !tags ? { label: '해시태그 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
   ];
   return { items, overflow };

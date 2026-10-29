@@ -5,6 +5,8 @@ import { deepClone, toast } from './dom.js';
 import { showError, clearErrors } from './errors.js';
 import { ensureCardFont } from './fontpick.js';
 import { adCfg, adFields } from './adlabel.js';
+import { extractColorsFromImageId } from '../lib/render.js';
+import { highlightFromColors } from '../lib/hlcolor.js';
 
 const now = () => performance.now();
 
@@ -102,6 +104,16 @@ function finishWith(done, prev, { fresh = false } = {}) {
   project.link = fresh ? (prev.link || '') : (done.link || '');
   if (prev.id) project.id = prev.id;
   if (prev.carousel?.accentColor && !project.carousel.accentColor) project.carousel.accentColor = prev.carousel.accentColor;
+  // 사진 캐러셀의 강조색: 처음 만들 때 사용자가 고른 색이 없으면 커버 사진의 색에서 고른다(2026-10-29 사용자 요청: 제품과 어울리는 색)
+  if (fresh && project.carousel?.mode === 'photo' && !project.carousel.overlayColors?.highlight) {
+    const cover = project.input?.imageIds?.[0];
+    if (cover) extractColorsFromImageId(cover).then((colors) => {
+      if (S.project !== project) return;
+      const hex = highlightFromColors(colors);
+      project.carousel.overlayColors = { ...(project.carousel.overlayColors || {}), highlight: hex };
+      refreshAll(); scheduleSave();
+    }).catch(() => {});
+  }
   project.carousel.hasPartnersLink = !!project.link;
   // 광고 표기·색: 처음 만들 때는 시작 화면에서 고른 광고 표기, 다시 만들 때는 이전 값을 그대로(lib 가 기본값을 채워도 사용자가 고른 것을 우선)
   if (fresh) Object.assign(project.carousel, adFields(adCfg(project.carousel.mode === 'photo' ? 'photo' : 'cardnews')));

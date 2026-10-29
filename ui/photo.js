@@ -120,14 +120,16 @@ export function photoStrip(list, { key, listId, uploadId, firstLabel = '커버',
   });
   const add = h('button', { type: 'button', class: 'photo-add', id: uploadId, 'aria-label': '사진 추가', onclick: onAdd }, icon('plus', { size: 22 }), h('span', null, '추가'));
   const row = h('div', { class: 'photo-row' }, ul, add);
-  const todo = list.filter((id) => !S.genImages?.has(id)).length;
+  const originals = list.filter((id) => !S.genImages?.has(id)).length;
+  const room = Math.max(0, MAX_PHOTOS - list.length);
+  const want = Math.min(ADD_AI_COUNT, room);
   const busy = recreating && recreating.listId === listId;
   const recreate = list.length ? h('div', { class: 'recreate-row', id: `${listId}-recreate-row` },
-    h('button', { type: 'button', class: 'btn btn-block', id: `${listId}-recreate`, disabled: !!recreating || !todo, onclick: () => recreateAll(list, listId) },
-      icon('sparkle', { size: 18 }), busy ? `새로 그리는 중… ${recreating.done}/${recreating.total}` : todo ? `사진 ${todo}장 AI로 새로 그리기 (중복 피하기)` : '모두 새로 그린 사진이에요'),
+    h('button', { type: 'button', class: 'btn btn-block', id: `${listId}-recreate`, disabled: !!recreating || !originals || !want, onclick: () => addAiPhotos(list, listId) },
+      icon('sparkle', { size: 18 }), busy ? `AI 사진 만드는 중… ${recreating.done}/${recreating.total}` : !want ? `사진이 꽉 찼어요 (${MAX_PHOTOS}장)` : `AI 사진 ${want}장 추가 만들기`),
     busy ? h('button', { type: 'button', class: 'btn btn-block recreate-stop', id: `${listId}-recreate-stop`, disabled: recreating.stopped, onclick: () => cancelRecreate() },
       recreating.stopped ? '멈추는 중…' : '멈추기') : null,
-    h('p', { class: 'muted small' }, '판매처 사진을 그대로 쓰지 않고, 같은 상품을 다른 각도·구도·배경의 새 사진으로 바꿔요. 원본은 그대로 남고, 카드에는 "연출 이미지" 표시가 붙어요.')) : null;
+    h('p', { class: 'muted small' }, '원본은 그대로 두고, 같은 상품을 다른 각도·구도·배경으로 찍은 사진을 뒤에 더 넣어요. 만든 사진은 원본과 같은 제품인지(색·모양) 확인해서, 다르면 넣지 않아요. 카드에는 "연출 이미지" 표시가 붙어요.')) : null;
   const actions = sel !== null && list[sel] ? h('div', { class: 'photo-actions', id: `${listId}-actions` },
     h('button', { type: 'button', class: 'btn', 'data-act': 'up', disabled: sel === 0, onclick: () => move(list, sel, -1, key) }, icon('arrowLeft', { size: 18 }), '앞으로'),
     h('button', { type: 'button', class: 'btn', 'data-act': 'down', disabled: sel === list.length - 1, onclick: () => move(list, sel, 1, key) }, '뒤로', icon('arrowRight', { size: 18 })),
@@ -152,10 +154,12 @@ function placeGenerated(list, oldId, newId) {
 /** id 가 목록에 원본 그대로 또는 AI 로 바꾼 모습으로 들어 있는 자리(없으면 -1) */
 const slotOf = (list, id) => list.findIndex((x) => x === id || S.genFrom?.get(x) === id);
 
-/** 사진 전부 새로 그리기(중복 피하기): 아직 새로 그리지 않은 사진을 2장씩 차례로 image.transformStream(recreate) 에 보낸다.
- *  연출은 사진마다 돌려 가며(깔끔한 연출 → 생활 속 → 다른 각도 → 위에서) 서로 비슷해지지 않게 한다. 한도에 걸리면 멈추고 안내한다.
+/** AI 사진 추가 만들기(2026-10-29 사용자 결정: "변환이 아니라 추가 생성, 2~3장이면 된다"):
+ *  원본은 그대로 두고 원본 사진을 참고로 새 사진 ADD_AI_COUNT 장을 뒤에 붙인다(2장씩 동시에). 연출은 돌려 가며(깔끔한 연출 → 생활 속 → 다른 각도).
+ *  서비스워커가 원본과 같은 제품인지 검증한 결과(check.same)가 false 면 목록에 넣지 않고 알려 준다. 한도에 걸리면 멈추고 안내한다.
  *  [멈추기]·새 상품 시작·패널 닫기면 진행 중인 요청까지 끊는다(포트 취소 → 서비스워커 fetch 중단). */
-let recreating = null;   // {listId, done, total, stopped, runs:Set<stream>}
+let recreating = null;   // {listId, done, total, stopped, runs:Set<stream>, rejected, rejectedWhy}
+export const ADD_AI_COUNT = 3;
 const RECREATE_OPTS = TRANSFORMS.find((t) => t.key === 'recreate').options.map((o) => o.key);
 export function cancelRecreate() {
   if (!recreating || recreating.stopped) return;
@@ -163,36 +167,46 @@ export function cancelRecreate() {
   for (const s of recreating.runs) s.cancel();
   fn.renderStage();
 }
-async function recreateAll(list, listId) {
+async function addAiPhotos(list, listId) {
   if (recreating) return;
-  const ids = list.filter((id) => !S.genImages?.has(id));
-  if (!ids.length) return;
-  const job = recreating = { listId, done: 0, total: ids.length, stopped: false, runs: new Set() };
+  const originals = list.filter((id) => !S.genImages?.has(id));
+  if (!originals.length) return;
+  const total = Math.min(ADD_AI_COUNT, Math.max(0, MAX_PHOTOS - list.length));
+  if (!total) { toast(`사진은 ${MAX_PHOTOS}장까지예요. 몇 장 빼고 다시 눌러 주세요.`, { kind: 'warn' }); return; }
+  const job = recreating = { listId, done: 0, total, stopped: false, runs: new Set(), rejected: 0, rejectedWhy: '' };
   fn.renderStage();
   const title = (S.manual.title || '').trim() || S.rec?.product?.title;
-  let stop = null, k = 0;
-  const one = async (id) => {
+  const look = S.ident?.look || '';
+  let stop = null;
+  const one = async (k) => {
     if (stop || job.stopped) return;
-    const option = RECREATE_OPTS[(list.indexOf(id) >= 0 ? list.indexOf(id) : k++) % RECREATE_OPTS.length];
-    const s = stream('image.transformStream', { imageId: id, kind: 'recreate', option, aspect: '4:5', productTitle: title });
+    const src = originals[k % originals.length];                 // 참고 사진은 원본을 돌아가며
+    const option = RECREATE_OPTS[k % RECREATE_OPTS.length];        // 연출도 돌아가며(깔끔한 연출 → 생활 속 → 다른 각도)
+    const s = stream('image.transformStream', { imageId: src, kind: 'recreate', option, aspect: '4:5', productTitle: title, productLook: look });
     job.runs.add(s);
     let r;
     try { r = await s.done; } catch (e) { if (e?.code !== 'CANCELLED' && !job.stopped) stop = stop || { error: e }; return; } finally { job.runs.delete(s); }
     if (r.fallback || !r.imageId) { stop = stop || { messageKo: r.messageKo }; return; }
-    if (!isLiveList(list) || !placeGenerated(list, id, r.imageId)) return; // 그 사이 사진을 빼거나 새 상품으로 바뀜
+    if (r.check && r.check.same === false) { job.rejected++; job.rejectedWhy = r.check.differences?.[0] || r.check.summary || ''; return; }   // 원본과 다른 제품이면 넣지 않는다
+    if (!isLiveList(list) || list.length >= MAX_PHOTOS) return;    // 그 사이 새 상품으로 바뀌었거나 꽉 참
+    list.push(r.imageId);
+    (S.genImages ||= new Set()).add(r.imageId);
+    (S.genFrom ||= new Map()).set(r.imageId, src);
     job.done++;
     fn.renderStage();
   };
-  const queue = ids.slice();
+  const queue = Array.from({ length: total }, (_, k) => k);
   await Promise.all([0, 1].map(async () => { while (queue.length && !stop && !job.stopped) await one(queue.shift()); }));
-  const done = job.done;
+  const { done, rejected, rejectedWhy } = job;
   recreating = null;
   fn.renderStage();
   if (!isLiveList(list)) return; // 새 상품으로 넘어갔으면 옛 결과를 알리지 않는다
+  const rej = rejected ? ` 원본과 달라 보여서 뺀 사진 ${rejected}장${rejectedWhy ? `(${rejectedWhy})` : ''}.` : '';
   if (stop?.error) showError(stop.error);
-  else if (stop) toast(`${done}장을 새로 그렸어요. ${stop.messageKo || '이미지 생성 한도에 걸렸어요.'}`, { kind: 'warn', ms: 7000 });
-  else if (job.stopped) toast(done ? `멈췄어요. 사진 ${done}장은 새로 그린 사진으로 바꿨어요.` : '멈췄어요. 바꾼 사진은 없어요.');
-  else toast(`사진 ${done}장을 새로 그렸어요. 원본은 그대로 남아 있어요.`);
+  else if (stop) toast(`AI 사진 ${done}장을 추가했어요. ${stop.messageKo || '이미지 생성 한도에 걸렸어요.'}`, { kind: 'warn', ms: 7000 });
+  else if (job.stopped) toast(done ? `멈췄어요. AI 사진 ${done}장은 추가됐어요.` : '멈췄어요. 추가한 사진은 없어요.');
+  else if (!done && rejected) toast(`AI 사진을 넣지 못했어요.${rej} 다시 눌러 보세요.`, { kind: 'warn', ms: 7000 });
+  else toast(`AI 사진 ${done}장을 뒤에 추가했어요. 원본은 그대로예요.${rej}`, { ms: rejected ? 7000 : 4000 });
 }
 
 /** 사진 줄의 한 장을 AI 로 바꾼다. 바꾼 사진은 같은 자리에 들어가고, 만들 때 그 카드에 "연출 이미지" 표시가 붙는다(S.genImages). */

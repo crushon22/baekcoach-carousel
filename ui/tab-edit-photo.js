@@ -2,7 +2,8 @@
 // 카드뉴스 전용 컨트롤(레이아웃·템플릿·제품 색)은 만들지 않는다. headline 은 항상 overlay.lines 를 줄바꿈으로 합친 값과 같게 맞춘다.
 import { request } from '../lib/bus.js';
 import * as store from '../lib/store.js';
-import { renderCoverVariants } from '../lib/render.js';
+import { renderCoverVariants, extractColorsFromImageId } from '../lib/render.js';
+import { highlightFromColors } from '../lib/hlcolor.js';
 import { Knowledge, effectivePhotoRules } from '../lib/knowledge.js';
 import { syncOverlay } from '../lib/review.js';
 import { WHERE } from '../lib/common.js';
@@ -142,6 +143,7 @@ export async function renderPhotoEdit(host) {
       wordsBox,
       h('div', { class: 'label' }, '강조 색'),
       h('div', { class: 'hl-swatches', id: 'hl-colors', role: 'group', 'aria-label': '강조 색' },
+        h('button', { type: 'button', class: 'btn', id: 'hl-product', title: '커버 사진의 색에서 고르기', onclick: async () => { const id = S.project?.input?.imageIds?.[0]; const colors = id ? await extractColorsFromImageId(id) : []; setHighlightColor(highlightFromColors(colors), host); } }, '제품 색'),
         ...HL_COLORS.map(([hex, name]) => h('button', { type: 'button', class: 'hl-swatch', 'data-color': hex, 'aria-pressed': String(hlColor.toUpperCase() === hex), 'aria-label': `강조 ${name}`, title: name, style: `--c:${hex}`, onclick: () => setHighlightColor(hex, host) },
           h('span', { class: 'hl-dot' }), h('span', { class: 'hl-name' }, name)))),
       h('p', { class: 'muted small' }, '강조 색은 모든 카드에 같이 적용돼요. 말로도 돼요: "강조 분홍으로", \'끝\' 강조해 줘')),
