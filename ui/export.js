@@ -8,7 +8,8 @@ import { showError, errorBox, normalizeError } from './errors.js';
 import { ensureCardFont } from './fontpick.js';
 import { cfgFromCarousel, adFields, defaultAd } from './adlabel.js';
 
-const st = { manual: { price: false, order: false, click: false }, opts: { c9x16: true, c1x1: false, textless: false }, confirming: false, busy: null, done: null, error: null };
+// 9:16 커버·엔딩은 빼기로(2026-10-29 사용자 결정) — 선택 칸도 없다
+const st = { manual: { price: false, order: false, click: false }, opts: { c9x16: false, c1x1: false, textless: false }, confirming: false, busy: null, done: null, error: null };
 let checks = null;
 
 function safeTitle(t) {
@@ -99,7 +100,6 @@ function renderExport() {
   }));
 
   const optRows = [
-    ['c9x16', '9:16 커버·엔딩 (릴스·스토리용)'],
     ['c1x1', '1:1 정사각 카드도 함께'],
     ['textless', '글자 없는 버전도 함께 (캔바 등에서 글자를 다시 얹을 때)'],
   ].map(([k, label]) => {
