@@ -112,7 +112,7 @@ function renderExport() {
     footer.push(h('div', { class: 'progress', id: 'export-progress', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': st.busy.pct },
       h('div', { class: 'progress-bar', style: { width: st.busy.pct + '%' } })), h('p', { class: 'muted center' }, `${st.busy.label} (${st.busy.pct}%)`));
   } else if (st.done) {
-    footer.push(h('div', { class: 'ok-box', id: 'export-done' }, h('strong', null, '내려받기 폴더에 저장했어요'), h('p', null, st.done.filename), h('p', { class: 'muted small' }, `${(st.done.bytes / 1048576).toFixed(1)}MB · 카드 PNG, 캡션, 해시태그${p.shorts ? ', 쇼츠 대본' : ''}가 들어 있어요. 올리기 전에 캡션을 한 번 더 봐 주세요.`)),
+    footer.push(h('div', { class: 'ok-box', id: 'export-done' }, h('strong', null, '내려받기 폴더에 저장했어요'), h('p', null, st.done.filename), h('p', { class: 'muted small' }, `${(st.done.bytes / 1048576).toFixed(1)}MB · 카드 PNG와 캡션_해시태그.txt(캡션+해시태그 한 파일)${p.shorts ? ', 쇼츠 대본' : ''}가 들어 있어요. 올리기 전에 캡션을 한 번 더 봐 주세요.`)),
       h('button', { type: 'button', class: 'btn btn-block', onclick: close }, '닫기'));
   } else if (st.confirming) {
     footer.push(h('div', { class: 'warn-box', id: 'export-confirm' }, h('strong', null, `아직 해결하지 않은 항목이 ${u.total}개 있어요`),

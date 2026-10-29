@@ -95,7 +95,7 @@ export async function addPhotos(files) {
     if (f.size > 15 * 1024 * 1024) { toast(`"${f.name}" 사진이 너무 커요(15MB 이하).`, { kind: 'warn' }); continue; }
     try { S.photos.push(await store.putImage(f, { kind: 'upload' })); n++; } catch (e) { showError(e); }
   }
-  if (n) queueMicrotask(maybeAutoFill);   // 목표 장수보다 모자라면 AI 사진으로 채운다(상품 알아보기가 돌고 있으면 그 뒤에)
+  if (n) setTimeout(maybeAutoFill, 0);   // 목표 장수보다 모자라면 AI 사진으로 채운다 — 화면을 그려 상품 알아보기가 시작된 뒤에(그러면 알아보기가 끝난 뒤 제품 모습을 넣어 만든다)
   return n;
 }
 
@@ -109,11 +109,12 @@ export async function maybeAutoFill() {
   const want = clampCount(S.photoCount);
   if (!have) return;
   if (have >= want) { schedulePick(); return; }   // 모자라지 않으면 만들 것 없이 순서(커버)만 AI 가 정한다
-  if (S.ident?.status === 'busy') return;
-  const key = `${want}:${S.photos.join(',')}`;
+  if (S.ident?.status === 'busy') return;   // 알아보기가 끝나면 identify.js 가 다시 부른다(제품 모습을 넣어 만들려고)
+  const key = `${want}:${[...S.photos].sort().join(',')}`;   // 순서는 상관없다(AI 가 줄을 다시 세워도 또 만들지 않게)
   if (S.autoFillKey === key) return;
   S.autoFillKey = key;
   try { if ((await store.kvGet('dev:ai', null))?.autoFill === false) { schedulePick(); return; } } catch { /* 시험용 값 없음 */ }
+  if (S.ident?.status === 'busy') { S.autoFillKey = ''; return; }   // 기다리는 사이 알아보기가 시작됐으면 그 뒤로 미룬다
   if (S.photos.length !== have || recreating) return;
   // 모자란 수보다 EXTRA_AI 장 더 만들어 고를 수 있게 한다(2026-10-29 사용자 요청: "만드는 개수 이상으로 만들어도 된다")
   await addAiPhotos(S.photos, 'photo-list', { total: Math.min(want - have + EXTRA_AI, MAX_POOL - have), auto: true });
@@ -131,9 +132,9 @@ export async function runPick() {
   const want = Math.min(clampCount(S.photoCount), ids.length);
   const key = `${want}:${ids.join(',')}`;
   if (S.photoPick?.key === key) return;
-  if (S.pickPromise) return S.pickPromise;   // 도는 중이면 그 결과를 기다린다(끝나면 키가 달라졌는지 다시 본다)
-  S.picking = true; fn.renderStage();
-  S.pickPromise = (async () => {
+  if (S.pickPromise) return S.pickPromise.then(() => runPick());   // 도는 중이면 끝난 뒤 키가 달라졌는지 다시 본다(사진을 빼거나 장수를 바꾼 경우)
+  S.picking = true; softRender();
+  const my = S.pickPromise = (async () => {
     let keep = null, why = '';
     try {
       const r = await request('ai.pickPhotos', { imageIds: ids, count: want, title: (S.manual.title || '').trim() || S.rec?.product?.title || '', generated: ids.map((id) => !!S.genImages?.has(id)) }, { timeoutMs: 45000 });
@@ -141,18 +142,45 @@ export async function runPick() {
     } catch (e) {
       if (['NO_KEY', 'KEY_INVALID', 'BILLING', 'FORBIDDEN'].includes(e?.code)) showError(e);
     }
+    if (S.pickPromise !== my) return;   // 그 사이 새로 만들기 등으로 상태가 바뀜 — 옛 결과는 버린다
     S.picking = false; S.pickPromise = null;
     const same = S.photos.length === ids.length && S.photos.every((id, i) => id === ids[i]);
-    if (!same || S.photoManual) { fn.renderStage(); return; }   // 그 사이 사진이 바뀌었거나 사람이 손댔으면 버린다
+    if (!same || S.photoManual) { softRender(); return; }   // 그 사이 사진이 바뀌었거나 사람이 손댔으면 버린다
     if (keep && keep.length === want && keep.every((i) => Number.isInteger(i) && ids[i])) {
       const chosen = keep.map((i) => ids[i]);
       S.photos.splice(0, S.photos.length, ...chosen, ...ids.filter((id) => !chosen.includes(id)));   // 제자리에서(썸네일 줄·AI 바꾸기가 같은 배열을 붙잡고 있다)
     }
     S.photoSel.photo = null;
     S.photoPick = { key: `${want}:${S.photos.join(',')}`, why, from: ids.length, want };
-    fn.renderStage();
+    softRender();
   })();
-  return S.pickPromise;
+  return my;
+}
+/** 사진 모드에서 만들기를 잠시 막는 이유(없으면 ''): AI 사진 만드는 중 · 쓸 사진 고르는 중. start.js updateMakeEnabled 가 버튼에 반영한다 */
+export function makeBlock() {
+  if (S.mode !== 'photo' || S.phase !== 'start') return '';
+  if (recreating) return 'AI 사진 만드는 중…';
+  if (S.picking) return 'AI 가 쓸 사진 고르는 중…';
+  return '';
+}
+const PHOTO_STRIP_OPTS = { key: 'photo', listId: 'photo-list', uploadId: 'btn-photo-upload', firstLabel: '커버', onAdd: () => uploadPhotos() };
+let deferredRender = false;
+/**
+ * AI 사진 도착·고르기 시작/끝 때 화면을 맞춘다. 이름·가격·설명 칸에 커서가 있으면 전체를 다시 그리지 않고(한글 조합·커서가 깨진다)
+ * 사진 줄·장수 안내·만들기 버튼만 바꾼 뒤, 칸을 나갈 때 전체를 그린다.
+ */
+export function softRender() {
+  const a = document.activeElement;
+  const typing = a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.closest('#stage') && a.id !== 'photo-count-input';
+  if (!typing) { fn.renderStage(); return; }
+  if (!deferredRender) { deferredRender = true; a.addEventListener('blur', () => { deferredRender = false; fn.renderStage(); }, { once: true }); }
+  const strip = document.getElementById('photo-list')?.closest('.photo-strip');
+  if (strip) strip.replaceWith(photoStrip(S.photos, PHOTO_STRIP_OPTS));
+  const line = document.getElementById('product-ref-line'); const nl = productRefLine();
+  if (line) { if (nl) line.replaceWith(nl); else line.remove(); }
+  const c = document.getElementById('photo-count'); if (c) c.textContent = countText();
+  const note = document.getElementById('photo-count-note'); if (note) note.textContent = noteText(clampCount(S.photoCount));
+  fn.updateMakeEnabled?.();
 }
 /** 사람이 줄을 손댔다: AI 가 다시 세우지 않는다 */
 function markManual() { S.photoManual = true; }
@@ -287,13 +315,13 @@ async function addAiPhotos(list, listId, { total: wantTotal = ADD_AI_COUNT, auto
     (S.genImages ||= new Set()).add(r.imageId);
     (S.genFrom ||= new Map()).set(r.imageId, src);
     job.done++;
-    fn.renderStage();
+    softRender();
   };
   const queue = Array.from({ length: total }, (_, k) => k);
   await Promise.all([0, 1].map(async () => { while (queue.length && !stop && !job.stopped) await one(queue.shift()); }));
   const { done, rejected, rejectedWhy, unverified } = job;
   recreating = null;
-  fn.renderStage();
+  softRender();
   if (!isLiveList(list)) return; // 새 상품으로 넘어갔으면 옛 결과를 알리지 않는다
   if (list === S.photos) schedulePick();   // 후보가 모였으니 AI 가 쓸 사진·순서를 정한다
   const rej = (rejected ? ` 원본과 달라 보여서 뺀 사진 ${rejected}장${rejectedWhy ? `(${rejectedWhy})` : ''}.` : '') + (unverified ? ` ${unverified}장은 원본과 대조할 부분이 적어 확인하지 못했어요. 제품이 맞는지 봐 주세요.` : '');
@@ -321,20 +349,28 @@ export async function ensureProductRef(title) {
       const r = await request('ai.productLook', { title: key, brand: S.ident?.brand?.brand || '', photoLook: S.ident?.look || '' }, { timeoutMs: 45000 });
       if (r?.known && r.look) ref = { look: r.look, mustKeep: r.mustKeep || [], avoid: r.avoid || [], confidence: r.confidence || 0 };
     } catch (e) {
+      entry.error = e?.code || 'ERROR';   // 한도·연결 오류는 "특정 못 함"과 다르다 — 안내문을 구분한다
       if (['NO_KEY', 'KEY_INVALID', 'BILLING', 'FORBIDDEN'].includes(e?.code)) showError(e);
     }
-    if (S.productRef === entry) { entry.ref = ref; entry.busy = false; fn.renderStage(); }
+    if (S.productRef === entry) { entry.ref = ref; entry.busy = false; softRender(); }
     return ref;
   })();
-  fn.renderStage();
+  softRender();
   return entry.promise;
+}
+/** 지금 적힌 이름으로 찾은 제품 모습(이름을 고쳤으면 옛 것은 쓰지 않는다) */
+export function currentProductRef() {
+  const key = ((S.manual.title || '').trim() || S.rec?.product?.title || '').trim();
+  return key && S.productRef?.key === key ? S.productRef.ref : null;
 }
 
 /** 이름으로 찾은 제품 모습 한 줄(찾는 중 · 찾음 · 모름). 사진이 있을 때만 */
 function productRefLine() {
   const pr = S.productRef;
   if (!pr || !S.photos.length) return null;
+  if (pr.key !== ((S.manual.title || '').trim() || S.rec?.product?.title || '').trim()) return null;   // 이름을 고쳤으면 옛 결과는 보여 주지 않는다
   if (pr.busy) return h('p', { class: 'muted small', id: 'product-ref-line', 'data-state': 'busy' }, `"${pr.key}"이(가) 어떻게 생긴 제품인지 찾는 중…`);
+  if (pr.error) return h('p', { class: 'muted small', id: 'product-ref-line', 'data-state': 'error' }, `제품 모습을 찾지 못했어요(${pr.error === 'RATE_LIMIT' ? 'AI 한도' : '연결 문제'}). 올린 사진에 보이는 모습만 기준으로 AI 사진을 만들어요.`);
   if (!pr.ref) return h('p', { class: 'muted small', id: 'product-ref-line', 'data-state': 'unknown' }, `"${pr.key}"은(는) 이름만으로는 어떤 제품인지 특정하지 못해서, 올린 사진에 보이는 모습만 기준으로 AI 사진을 만들어요.`);
   return h('p', { class: 'muted small', id: 'product-ref-line', 'data-state': 'ok' }, h('b', null, '이름으로 찾은 제품 모습 '), pr.ref.look);
 }
@@ -371,9 +407,9 @@ async function addProductPhoto(i) {
     }
     const id = rec.imageIds[i];
     const at = slotOf(S.photos, id); // AI 로 바꾼 모습으로 들어 있어도 "넣음" — 다시 누르면 그 자리를 뺀다
-    if (at >= 0) S.photos.splice(at, 1);
-    else if (S.photos.length >= MAX_PHOTOS) toast(`사진은 ${MAX_PHOTOS}장까지만 쓸 수 있어요.`, { kind: 'warn' });
-    else { S.photos.push(id); queueMicrotask(maybeAutoFill); }
+    if (at >= 0) { S.photos.splice(at, 1); S.photoSel.photo = null; markManual(); }
+    else if (S.photos.length >= MAX_POOL) toast(`사진은 ${MAX_POOL}장까지만 둘 수 있어요.`, { kind: 'warn' });
+    else { S.photos.push(id); setTimeout(maybeAutoFill, 0); }
     fn.renderStage();
   } catch (e) { showError(e); }
 }
@@ -421,23 +457,30 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
     teaseRow({ title: pageProduct ? S.rec.product.title : S.manual.title }),
     countPicker(),
     productRefLine(),
-    h('div', { class: 'label label-row' }, h('span', null, '사진'), h('span', { class: 'muted small', id: 'photo-count' }, n ? `사진 ${n}장 · 캐러셀 ${usedCount()}장` : `최대 ${MAX_POOL}장`)),
-    photoStrip(S.photos, { key: 'photo', listId: 'photo-list', uploadId: 'btn-photo-upload', firstLabel: '커버', onAdd: uploadPhotos }),
+    h('div', { class: 'label label-row' }, h('span', null, '사진'), h('span', { class: 'muted small', id: 'photo-count' }, countText())),
+    photoStrip(S.photos, PHOTO_STRIP_OPTS),
     h('p', { class: 'muted small', id: 'photo-drop-hint' }, '사진을 끌어다 놓거나 붙여 넣기(Ctrl+V · ⌘V)로도 넣을 수 있어요. 사진을 누르면 AI로 바꿀 수 있어요.'),
     productPhotoPicker()));
   kids.push(h('section', { class: 'extra', id: 'photo-style' },
     h('div', { class: 'label' }, '글씨 스타일'), styleButtons()));
   kids.push(infoForm());
   kids.push(h('div', { class: 'make-wrap' },
-    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', disabled: n < MIN_PHOTOS || !!recreating || !!S.picking, onclick: () => fn.onMake() }, recreating ? 'AI 사진 만드는 중…' : S.picking ? 'AI 가 쓸 사진 고르는 중…' : '만들기'),
+    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', disabled: n < MIN_PHOTOS || !!makeBlock(), onclick: () => fn.onMake() }, makeBlock() || '만들기'),
     n < MIN_PHOTOS ? h('p', { class: 'warn-line small center', id: 'photo-few' }, `사진을 ${MIN_PHOTOS}장 이상 올려 주세요 (지금 ${n}장)`) : null));
 }
 
-/** "몇 장으로 만들까요?" 2~10장을 직접 적는다(−/+ 도 됨). 사진이 모자라면 AI 사진으로 채우고, 더 많으면 올린 사진을 다 쓴다(최대 10) */
+/** 장수 안내 한 줄 */
+function noteText(w) {
+  const n = S.photos.length;
+  return (n && n < w ? `사진 ${n}장에 AI 사진 ${Math.min(w - n + EXTRA_AI, MAX_POOL - n)}장을 더 만들고(고를 수 있게 ${EXTRA_AI}장 여유) 그중 ${w}장으로 만들어요.` : n > w ? `사진 ${n}장 중에서 AI 가 ${w}장을 골라 ${w}장으로 만들어요. 아래에서 바꿀 수 있어요.` : `사진이 모자라면 AI 사진으로 채우고, 많으면 AI 가 ${w}장을 골라요(캐러셀 최대 ${MAX_PHOTOS}장).`) + ' 첫 장은 AI 가 가장 눈에 띄는 사진으로 골라요.';
+}
+/** "사진 N장 · 캐러셀 M장" */
+const countText = () => (S.photos.length ? `사진 ${S.photos.length}장 · 캐러셀 ${usedCount()}장` : `최대 ${MAX_POOL}장`);
+/** "몇 장으로 만들까요?" 2~10장을 직접 적는다(−/+ 도 됨). 사진이 모자라면 AI 사진으로 채우고(+2장 여유), 더 많으면 AI 가 그 수만큼 고른다 */
 function countPicker() {
   const want = clampCount(S.photoCount);
   const n = S.photos.length;
-  const noteOf = (w) => (n && n < w ? `사진 ${n}장에 AI 사진 ${Math.min(w - n + EXTRA_AI, MAX_POOL - n)}장을 더 만들고(고를 수 있게 ${EXTRA_AI}장 여유) 그중 ${w}장으로 만들어요.` : n > w ? `사진 ${n}장 중에서 AI 가 ${w}장을 골라 ${w}장으로 만들어요. 아래에서 바꿀 수 있어요.` : `사진이 모자라면 AI 사진으로 채우고, 많으면 AI 가 ${w}장을 골라요(캐러셀 최대 ${MAX_PHOTOS}장).`) + ' 첫 장은 AI 가 가장 눈에 띄는 사진으로 골라요.';
+  const noteOf = noteText;
   const note = h('p', { class: 'muted small', id: 'photo-count-note' }, noteOf(want));
   const inp = h('input', { type: 'number', class: 'input count-input', id: 'photo-count-input', inputmode: 'numeric', min: String(MIN_PHOTOS), max: String(MAX_PHOTOS), step: '1', value: String(want), 'aria-label': '캐러셀 장수' });
   // 칸에 적는 동안(1 → 10 처럼 지나가는 값)은 상태를 바꾸지 않고 안내문만 맞춘다. 칸을 나가거나 Enter 를 치면(change) 그때 확정한다.
@@ -460,7 +503,7 @@ function countPicker() {
  * 만들기 직전에 AI 가 쓸 사진과 카드 순서를 정한다(ai.pickPhotos, 2026-10-29 사용자 요청: "5장 요청하면 분석해서 적절한 걸로" · "올린 순서가 아니라 가장 임팩트 있는 장면을 첫 장에").
  * 목표 장수가 곧 캐러셀 장수다 — 5장을 적었으면 사진이 8장이어도 5장. 사진이 그보다 적거나 같으면 전부 쓰되 커버(1번)를 AI 가 고른다.
  * 같은 사진·장수면 다시 고르지 않는다(S.photoPick). 못 고르면 올린 순서대로.
- * @returns {Promise<{imageIds:string[], picked:{from:number, want:number, why:string}|null}>}
+ * @returns {Promise<{imageIds:string[], picked:{from:number, want:number, why:string, manual:boolean}}>}
  */
 export async function pickPhotosForMake() {
   if (!S.photoManual) await runPick();   // 아직 AI 가 안 세웠거나 그 뒤 사진이 바뀌었으면 지금 세운다

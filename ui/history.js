@@ -49,6 +49,7 @@ export async function openProject(id) {
     clearErrors();
     p.link = p.link || '';
     S.project = p;
+    S.lastPick = null;   // 마지막 만들기의 "사진 M장 중 골라서"는 이 작업의 것이 아니다
     S.phase = 'ready';
     S.stream = null; S.progress = null;
     S.tab = 'edit'; S.cardIndex = 0;

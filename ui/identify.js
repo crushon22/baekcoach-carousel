@@ -34,10 +34,12 @@ export function identBlock() {
 export function identTyped() {
   if (!S.ident || S.ident.status === 'ok' || S.ident.status === 'failed') return;
   if (S.ident.status === 'unknown' && !hasTitle()) return;
+  const wasBusy = S.ident.status === 'busy';
   S.ident.status = 'ok';
   S.ident.note = '';
   token++;   // 알아보는 중이었으면 그 결과는 버린다
   sync();
+  if (wasBusy) fn.maybeAutoFill?.();   // 알아보기를 기다리던 자동 채우기를 이어서(이름은 사람이 적은 것)
 }
 
 /** 새 상품으로 시작할 때 */

@@ -244,7 +244,9 @@ export function updateMakeEnabled() {
   const b = document.getElementById('btn-make');
   if (b) {
     const gate = identBlock();
-    b.disabled = !!gate || !buildProduct(IS_WEB ? 'manual' : undefined);
+    const block = fn.makeBlock?.() || '';   // 사진 모드: AI 사진 만드는 중 · 쓸 사진 고르는 중(ui/photo.js)
+    b.disabled = !!gate || !!block || !buildProduct(IS_WEB ? 'manual' : undefined);
+    if (S.mode === 'photo' && S.phase === 'start') b.textContent = block || '만들기';
     const wrap = b.closest('.make-wrap');
     let note = document.getElementById('make-gate');
     if (gate && wrap && !note) { note = h('p', { class: 'make-gate small center', id: 'make-gate', 'aria-live': 'polite' }); b.after(note); }

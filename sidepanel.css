@@ -287,7 +287,6 @@ pre.final-caption { white-space: pre-wrap; overflow-wrap: anywhere; background: 
 
 .photo-list { list-style: none; padding: 0; margin: 10px 0; display: flex; flex-direction: column; gap: 8px; }
 .photo-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1.5px solid var(--line); border-radius: 12px; flex-wrap: wrap; }
-.photo-item:first-child { border-color: var(--brand); background: var(--brand-soft); }
 .photo-no { flex: 1 1 70px; font-weight: 700; min-width: 0; }
 .photo-btns { display: flex; gap: 6px; }
 .photo-btns .btn { padding: 8px 10px; }
