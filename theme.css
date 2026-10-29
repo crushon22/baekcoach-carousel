@@ -623,6 +623,13 @@ body.drop-over #stage { outline: 3px dashed var(--blue); outline-offset: -6px; b
 .identify-ask p { margin: 0; }
 .identify-q { color: var(--sub); font-size: 16px; }
 .identify-name { font-size: 20px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; line-height: 1.3; }
+.identify-brand { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px !important; font-size: 16px; color: var(--ink); }
+.identify-brand > p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.identify-brand.none { color: var(--sub); }
+.identify-brand-k { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 9999px; background: #fff; border: 1px solid var(--line); color: var(--sub); font-size: 16px; }
+.identify-brand[data-from="logo"] .identify-brand-k { border-color: var(--blue); color: var(--blue); }
+.identify-brand .muted { font-size: 16px; }
+.identify-brand .btn-chip { min-height: 44px; padding: 0 14px; border-radius: 9999px; }
 .identify-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .identify-row .identify-acts .btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
 .identify-row .identify-acts .btn-primary .ico { color: #fff; }

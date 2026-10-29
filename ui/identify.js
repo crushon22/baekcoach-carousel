@@ -1,4 +1,5 @@
-// 사진 보고 상품 이름 알아보기(ai.identifyProduct).
+// 사진 보고 상품 이름·브랜드 알아보기(ai.identifyProduct).
+//  · 로고·상표 글자로 확인된 브랜드는 이름 앞에 붙어서 온다. 모양만 보고 짐작한 브랜드는 [브랜드 넣기]를 눌러야 들어간다
 // 이름 칸이 비어 있는데 사진이 들어오면 바로 알아보고, 사람이 이름을 확인해야 만들기가 켜진다.
 //  · busy(알아보는 중) → ask(이게 맞나요? [맞아요][이름 고치기]) → ok
 //  · unknown(모르겠어요): 이름을 적으면 ok. 사진 캐러셀은 [이름 없이 만들기]도 된다(이름은 지어내지 않는다)
@@ -13,6 +14,11 @@ import { icon } from './icons.js';
 const pct = (c) => `${Math.round((Number(c) || 0) * 100)}%`;
 const sigOf = (ids) => (ids || []).slice(0, 3).join(',');
 const hasTitle = () => !!(S.manual.title || '').trim();
+/** 브랜드·모델을 일반 이름 앞에 붙인다(lib/agents.js 와 같은 규칙) */
+const withBrand = (base, b) => {
+  const head = [b?.brand, b?.model].filter((x) => x && !base.includes(x)).join(' ');
+  return (head ? `${head} ${base}` : base).slice(0, 40);
+};
 let token = 0;
 
 /** 만들기를 막는 이유(없으면 '') */
@@ -65,6 +71,7 @@ function rowKids(st) {
       h('p', { class: 'identify-q' }, '사진 속 상품, 이게 맞나요?'),
       h('p', { class: 'identify-name', id: 'identify-name' }, it.name),
       h('p', { class: 'muted small identify-why' }, [`확신 ${pct(it.confidence)}`, it.evidence].filter(Boolean).join(' · ')),
+      brandLine(it),
       h('div', { class: 'identify-acts' },
         h('button', { type: 'button', class: 'btn btn-primary', id: 'btn-ident-ok', onclick: confirm }, icon('check', { size: 16 }), '맞아요'),
         h('button', { type: 'button', class: 'btn', id: 'btn-ident-edit', onclick: editName }, '이름 고치기')))];
@@ -82,6 +89,33 @@ function rowKids(st) {
       icon('sparkle', { size: 16 }), hasTitle() && it.status !== 'failed' ? '사진으로 이름 다시 찾기' : '사진 보고 이름 찾기'),
     h('p', { class: 'muted small identify-note', id: 'identify-note' }, it.note || ''),
   ];
+}
+
+/** 브랜드 한 줄: 로고로 확인 / 모양으로 추정([브랜드 넣기]) / 못 찾음 */
+function brandLine(it) {
+  const b = it.brand;
+  if (!b) return h('p', { class: 'identify-brand none', id: 'identify-brand' }, h('span', { class: 'identify-brand-k' }, '브랜드'), '사진에서 로고·상표 글자를 찾지 못했어요');
+  const label = [b.brand, b.model].filter(Boolean).join(' ');
+  if (b.from === 'logo') {
+    return h('p', { class: 'identify-brand', id: 'identify-brand', 'data-from': 'logo' },
+      h('span', { class: 'identify-brand-k' }, '브랜드'), h('b', null, label), h('span', { class: 'muted' }, b.evidence || '사진 속 로고·글자로 확인'));
+  }
+  return h('div', { class: 'identify-brand', id: 'identify-brand', 'data-from': 'shape' },
+    h('p', null, h('span', { class: 'identify-brand-k' }, '브랜드 추정'), h('b', null, label), h('span', { class: 'muted' }, `로고가 안 보여서 확실하지 않아요 · ${pct(b.confidence)}`)),
+    h('button', { type: 'button', class: 'btn btn-chip', id: 'btn-ident-brand', 'aria-pressed': String(!!it.brandOn), onclick: toggleBrand }, it.brandOn ? '브랜드 빼기' : '브랜드 넣기'));
+}
+
+function toggleBrand() {
+  const it = S.ident;
+  if (!it?.brand) return;
+  it.brandOn = !it.brandOn;
+  it.name = it.brandOn ? withBrand(it.base, it.brand) : it.base;
+  S.manual.title = it.name;
+  const inp = document.getElementById(it.inputId);
+  if (inp) inp.value = it.name;
+  fn.schedulePreview?.(200);
+  sync();
+  document.getElementById('btn-ident-brand')?.focus();
 }
 
 function currentIds() { return S.ident?.ids || []; }
@@ -105,7 +139,7 @@ async function run(ids, { inputId, optional, manual = false }) {
     S.manual.title = r.name;
     const inp = document.getElementById(S.ident.inputId);
     if (inp) inp.value = r.name;
-    Object.assign(S.ident, { status: 'ask', name: r.name, confidence: r.confidence, evidence: r.evidence || '' });
+    Object.assign(S.ident, { status: 'ask', name: r.name, base: r.base || r.name, brand: r.brand || null, brandOn: r.brand?.from === 'logo', confidence: r.confidence, evidence: r.evidence || '' });
     fn.schedulePreview?.(200);
   } else {
     Object.assign(S.ident, { status: 'unknown', why: r.why || '' });

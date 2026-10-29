@@ -148,6 +148,10 @@
   html.web body[data-phone] #app :is(.chip, .hl-swatch, .btn:not(.btn-big):not(.btn-primary), .option) { font-size: 14px; min-height: 36px; }
   html.web body[data-phone] #app .chip { padding-inline: 14px; }
   html.web body[data-phone] .tabs [role=tab] { font-size: 15px; }
+  /* 이름 확인 카드: 브랜드 줄의 머리말·근거는 작게, 브랜드 이름만 또렷하게 */
+  html.web #identify-row :is(.identify-q, .identify-brand .muted) { font-size: 14px; }
+  html.web #identify-row .identify-brand-k { font-size: 13px; height: 24px; }
+  html.web #identify-row .identify-brand .btn-chip { min-height: 32px; font-size: 14px; }
   html.web body[data-phone] .card-nav-title strong { font-size: 15px; }
   html.web .decide-chip { min-height: 52px; padding: 6px 12px; }
   html.web .decide-chip .chip-k { font-size: 12px; }
