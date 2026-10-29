@@ -635,6 +635,10 @@ body.drop-over #stage { outline: 3px dashed var(--blue); outline-offset: -6px; b
 .identify-row .identify-acts .btn-primary .ico { color: #fff; }
 .identify-row .identify-acts .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
 .make-gate { margin: 0; color: var(--sub); }
+/* 검수 탭 · 카드별 검수: 카드 글 줄 */
+.card-check { display: grid; gap: 8px; }
+.card-lines { margin: 0; padding: 10px 12px; list-style: none; border-radius: 10px; background: var(--zone); color: var(--ink); }
+.card-lines li + li { margin-top: 2px; }
 
 /* 댓글 유도(제품 정보 숨기기) 스위치: 이름 칸 아래 */
 .tease-row { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--zone); }

@@ -209,7 +209,7 @@ function makeButton(label = '만들기') {
   return h('div', { class: 'make-wrap' },
     teaseRow({ title: currentInfo()?.title || S.manual.title }),
     h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', onclick: () => fn.onMake() }, label),
-    h('p', { class: 'muted small center' }, '카드·캡션·쇼츠 대본을 한 번에 만들어요.'));
+    h('p', { class: 'muted small center' }, '카드와 캡션을 한 번에 만들어요.'));
 }
 
 function manualForm({ withPrice, titleLabel, titleHint, note }) {
@@ -357,8 +357,6 @@ export function renderStartStage() {
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-read-page', onclick: async () => { await loadProduct({ refresh: true }); fn.renderStrip(); fn.renderStage(); if (!S.rec?.product) toast('이 탭은 쿠팡 상품 페이지가 아니에요.', { kind: 'warn' }); } }, '지금 보는 탭에서 상품 읽기'),
       S.cp?.hasKeys ? searchPanel() : null),
     makeButton('이 내용으로 만들기'));
-    kids.push(h('details', { class: 'extra', id: 'shorts-start' }, h('summary', null, '쇼츠 대본으로 시작하기'),
-      shortsStartForm()));
   }
   assemble(kids);
 }
@@ -436,7 +434,7 @@ function renderWebStart(kids) {
       h('p', { class: 'muted small' }, '쿠팡 상품 페이지의 설명을 붙여 넣으면 글이 그 내용을 근거로 써요.'))),
   h('div', { class: 'make-wrap' },
     h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', onclick: () => fn.onMake('manual') }, '만들기'),
-    h('p', { class: 'muted small center' }, '카드·캡션·쇼츠 대본을 한 번에 만들어요.')));
+    h('p', { class: 'muted small center' }, '카드와 캡션을 한 번에 만들어요.')));
 
   const topic = h('textarea', { id: 'topic-text', class: 'input', rows: 2, placeholder: '예: 요즘 뜨는 핸디 청소기 고르는 법', 'aria-label': '주제' });
   topic.value = S.topic || '';
@@ -448,14 +446,8 @@ function renderWebStart(kids) {
       h('label', { class: 'label', for: 'topic-text' }, '주제'), topic,
       photoBlock(S.topicImageIds, { label: '사진 (선택)' }),
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-make-topic', onclick: () => fn.onMake('topic') }, '이 주제로 만들기'))));
-  kids.push(h('details', { class: 'extra', id: 'shorts-start' }, h('summary', null, '쇼츠 대본으로 시작하기'), shortsStartForm()));
 }
 
-function shortsStartForm() {
-  const ta = h('textarea', { class: 'input', id: 'shorts-start-text', rows: 5, placeholder: '쇼츠 대본이나 자막을 붙여 넣으세요 (10자 이상)', 'aria-label': '쇼츠 대본' });
-  return h('div', { class: 'form' }, ta,
-    h('button', { type: 'button', class: 'btn btn-block', id: 'btn-shorts-start', onclick: () => fn.makeFromShorts(ta.value) }, '이 대본으로 캐러셀 만들기'));
-}
 
 export { hasKey, canonicalProductUrl };
 

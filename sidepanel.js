@@ -63,7 +63,8 @@ function renderDecision() {
     chip('type', '유형', p.plan.typeName || TYPE_LABELS[p.plan.type] || p.plan.type),
     chip('purpose', '목적', p.plan.purpose || '-'),
     chip('count', '장수', `${p.plan.count || p.carousel.cards.length}장`),
-    chip('tease', '댓글 유도', p.options?.tease ? '켬' : '끔'))];
+    // 댓글 유도(번호·색상명 숨기기)는 상품 이름이 있을 때만 뜻이 있다(주제·쇼츠 대본으로 만든 것은 칩 없음)
+    ...(p.input?.title ? [chip('tease', '댓글 유도', p.options?.tease ? `켬 · "${p.plan?.commentWord || '나도'}"` : '끔')] : []))];
   if (S.picker && !locked) {
     const opts = S.picker === 'type' ? Object.entries(TYPE_LABELS).map(([k, v]) => [k, v, k === p.plan.type])
       : S.picker === 'purpose' ? PURPOSES.map((v) => [v, v, v === p.plan.purpose])
@@ -83,7 +84,7 @@ function renderDecisionPhoto(p, locked) {
   // 버전·장수는 바꿀 수 없는 정보라 작은 한 줄로, 바꿀 수 있는 스타일만 칩으로 크게(2026-10-28 사용자 의견: "같은 크기면 안 예뻐요")
   const kids = [h('div', { class: 'decide-row decide-photo', role: 'group', 'aria-label': '사진 캐러셀 설정' },
     h('p', { class: 'decide-meta', id: 'decide-meta' }, h('span', { 'data-kind': 'mode' }, '사진 캐러셀'), h('span', { class: 'decide-sep', 'aria-hidden': 'true' }, '·'), h('span', { 'data-kind': 'count' }, `${n}장`),
-      ...(p.options?.tease ? [h('span', { class: 'decide-sep', 'aria-hidden': 'true' }, '·'), h('span', { 'data-kind': 'tease' }, '댓글 유도')] : [])),
+      ...(p.options?.tease ? [h('span', { class: 'decide-sep', 'aria-hidden': 'true' }, '·'), h('span', { 'data-kind': 'tease' }, `댓글 유도 "${p.plan?.commentWord || '나도'}"`)] : [])),
     h('button', { type: 'button', class: 'decide-chip', 'data-kind': 'style', 'aria-expanded': String(S.picker === 'style'), disabled: locked, onclick: () => { S.picker = S.picker === 'style' ? null : 'style'; renderDecision(); } },
       h('span', { class: 'chip-k' }, '스타일'), h('span', { class: 'chip-v' }, STYLE_LABEL[style] || style)))];
   if (S.picker === 'style' && !locked) {

@@ -21,7 +21,8 @@ export const AD_TEXTS = ['[광고]', '광고', '#광고', '유료 광고'];
 export const AD_SIZES = [{ value: 's', label: '작게', text: '작게' }, { value: 'm', label: '보통', text: '보통' }, { value: 'l', label: '크게', text: '크게' }];
 
 /** 기본값: 카드뉴스는 표시 없음, 사진 캐러셀은 왼쪽 위 · 바탕 상자 */
-export const defaultAd = (mode) => ({ on: mode === 'photo', position: 'tl', look: 'box', text: '[광고]', size: 'm', color: null });
+// 광고 표기는 카드뉴스·사진 캐러셀 모두 기본 켬(2026-10-29 사용자 결정: 파트너스 글이라 표기는 필수, 캡션 고지문은 뺌)
+export const defaultAd = (mode) => ({ on: true, position: 'tl', look: 'box', text: '[광고]', size: 'm', color: null, mode });
 export const adCfg = (mode = S.mode) => (S.ad[mode] = { ...defaultAd(mode), ...(S.ad[mode] || {}) });
 
 /** 설정 → carousel 필드 */
@@ -35,7 +36,7 @@ export const adFields = (cfg) => {
 /** carousel → 설정 */
 export function cfgFromCarousel(c) {
   const st = c?.adLabelStyle || {};
-  return { on: c?.adLabel ?? (c?.mode === 'photo'), position: st.position || 'tl', look: st.look || 'box', text: st.text || '[광고]', size: st.size || 'm', color: okColor(st.color) };
+  return { on: c?.adLabel ?? true, position: st.position || 'tl', look: st.look || 'box', text: st.text || '[광고]', size: st.size || 'm', color: okColor(st.color) };
 }
 
 // 견본 그림: 렌더러의 renderAdLabelSample 이 있으면 그것으로, 없거나 실패하면 CSS 로 흉내 낸다

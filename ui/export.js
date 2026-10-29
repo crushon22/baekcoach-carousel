@@ -2,7 +2,8 @@
 import { IS_WEB } from '../lib/platform.js';
 import { buildExportZip, downloadZip } from '../lib/render.js';
 import { h, setChildren, toast } from './dom.js';
-import { S, fn, el, isPhoto, cards, composed, finalTags, shortsText, factIssues, cardMeta, saveNow } from './app.js';
+import { S, fn, el, isPhoto, cards, composed, finalTags, shortsText, formatIssues, cardMeta, saveNow } from './app.js';
+import { HASHTAG_MAX } from '../lib/ai-util.js';
 import { showError, errorBox, normalizeError } from './errors.js';
 import { ensureCardFont } from './fontpick.js';
 import { cfgFromCarousel, adFields, defaultAd } from './adlabel.js';
@@ -28,17 +29,15 @@ async function computeChecks() {
     if (low.length) { lowCards.push(i); low.forEach((k) => lowKinds.add(k)); }
   }
   const warn = (code) => c.warnings.find((w) => w.code === code);
-  const fi = factIssues().length;
+  const leaks = formatIssues().filter((i) => i.kind === 'identity_leak').length;
   const tags = finalTags().length;
   const items = [
-    { key: 'fact', ok: fi === 0, title: '근거 없는 주장 0개', detail: fi ? `🔎 ${fi}건이 남아 있어요. 완화하거나 빼거나 근거를 남겨 주세요.` : '남은 🔎가 없어요.', go: fi ? { label: '근거·검수 열기', run: () => fn.openTab('review', { scroll: true }) } : null },
-    { key: 'disclosure', ok: c.text.startsWith(c.disclosure), title: '파트너스 고지 문구', detail: '캡션 첫 줄에 고지 문구가 자동으로 들어가요(끌 수 없어요).' },
-    { key: 'link', ok: c.hasLink && !warn('LINK_INVALID'), title: '파트너스 링크', detail: c.hasLink ? (warn('LINK_NOT_COUPANG') ? '링크가 있지만 쿠팡 파트너스 링크가 맞는지 확인해 주세요.' : '캡션에 링크가 들어가요.') : '링크가 비어 있어요. 링크가 없으면 수수료가 생기지 않아요.', go: c.hasLink ? null : { label: '링크 넣으러 가기', run: () => fn.openTab('caption', { scroll: true }) } },
     (() => {
       const ad = cfgFromCarousel(p.carousel);
-      return { key: 'adlabel', ok: ad.on || !c.hasLink, title: '광고 표기', detail: ad.on ? `카드에 "${ad.text}" 표시가 들어가요.` : (c.hasLink ? '파트너스 링크가 있는데 광고 표기가 없어요. 표시를 권장해요.' : '광고 표기가 없어요(링크가 없어 괜찮아요).'),
-        go: !ad.on && c.hasLink ? { label: '광고 표기 켜기', run: () => { Object.assign(p.carousel, adFields({ ...defaultAd('photo'), ...ad, on: true })); fn.refreshAll?.(); fn.openExport(); } } : null };
+      return { key: 'adlabel', ok: ad.on, title: '광고 표기', detail: ad.on ? `카드에 "${ad.text}" 표시가 들어가요.` : '파트너스 글이라 카드에 광고 표기가 있어야 해요.',
+        go: ad.on ? null : { label: '광고 표기 켜기', run: () => { Object.assign(p.carousel, adFields({ ...defaultAd(isPhoto(p) ? 'photo' : 'cardnews'), ...ad, on: true })); fn.refreshAll?.(); fn.openExport(); } } };
     })(),
+    ...(p.options?.tease ? [{ key: 'leak', ok: leaks === 0, title: '번호·색상명 숨김', detail: leaks ? `숨기기로 한 제품 정보가 ${leaks}곳에 그대로 있어요.` : '카드와 캡션에 번호·색상명이 없어요. 댓글이 달리면 DM으로 링크를 보내 주세요.', go: leaks ? { label: '검수 열기', run: () => fn.openTab('review', { scroll: true }) } : null }] : []),
     { key: 'volatile', ok: !warn('VOLATILE_CLAIM'), title: '바뀔 수 있는 표현(배송·최저가)', detail: warn('VOLATILE_CLAIM')?.messageKo || '캡션에 로켓배송·최저가 같은 표현이 없어요.', go: warn('VOLATILE_CLAIM') ? { label: '캡션 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
     { key: 'overflow', ok: overflow.length === 0, title: '카드 글자 넘침', detail: overflow.length ? `${overflow.map((i) => i + 1).join('·')}번 카드의 글이 칸을 넘쳐요.` : '모든 카드의 글이 칸 안에 들어가요.', go: overflow.length ? { label: `${overflow[0] + 1}번 카드 고치기`, run: () => fn.gotoCard(overflow[0]) } : null },
     { key: 'contrast', ok: lowCards.length === 0, title: '잘 보이는 글씨 색',
@@ -46,7 +45,7 @@ async function computeChecks() {
         ? `${lowCards.length === cards().length ? '모든 카드' : lowCards.map((i) => i + 1).join('·') + '번 카드'}에서 ${Object.keys(LOW_NAME).filter((k) => lowKinds.has(k)).map((k) => LOW_NAME[k]).join('·')} 색이 배경과 비슷해서 잘 안 보일 수 있어요.`
         : '글씨와 배경 색이 충분히 달라요.',
       go: lowCards.length ? { label: '색 고치러 가기', run: () => openDesign() } : null },
-    { key: 'tags', ok: tags <= 30, title: '해시태그 30개 이하', detail: tags > 30 ? `${tags}개예요. ${tags - 30}개를 줄여 주세요.` : `${tags}개예요.`, go: tags > 30 ? { label: '해시태그 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
+    { key: 'tags', ok: tags >= 1 && tags <= HASHTAG_MAX, title: `해시태그 3~${HASHTAG_MAX}개`, detail: tags > HASHTAG_MAX ? `${tags}개예요. ${tags - HASHTAG_MAX}개를 줄여 주세요.` : tags ? `${tags}개예요.` : '해시태그가 없어요.', go: tags > HASHTAG_MAX || !tags ? { label: '해시태그 고치기', run: () => fn.openTab('caption', { scroll: true }) } : null },
   ];
   return { items, overflow };
 }
@@ -62,7 +61,6 @@ function openDesign() {
 }
 
 const MANUAL = [
-  { key: 'price', text: '판매 페이지에서 가격·배송을 다시 확인했어요' },
   { key: 'order', text: '카드 순서와 글이 괜찮은지 넘겨 봤어요' },
   { key: 'click', text: '링크를 눌러 내 상품이 열리는지 확인했어요', needsLink: true },
 ];
@@ -91,6 +89,7 @@ export function closeOverlay() {
 }
 
 function renderExport() {
+  const p = S.project;
   const c = composed();
   const u = unresolved();
   const close = () => closeOverlay();
@@ -119,11 +118,11 @@ function renderExport() {
     footer.push(h('div', { class: 'progress', id: 'export-progress', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': st.busy.pct },
       h('div', { class: 'progress-bar', style: { width: st.busy.pct + '%' } })), h('p', { class: 'muted center' }, `${st.busy.label} (${st.busy.pct}%)`));
   } else if (st.done) {
-    footer.push(h('div', { class: 'ok-box', id: 'export-done' }, h('strong', null, '내려받기 폴더에 저장했어요'), h('p', null, st.done.filename), h('p', { class: 'muted small' }, `${(st.done.bytes / 1048576).toFixed(1)}MB · 카드 PNG, 캡션, 해시태그, 쇼츠 대본이 들어 있어요. 올리기 전에 캡션의 가격·링크를 한 번 더 봐 주세요.`)),
+    footer.push(h('div', { class: 'ok-box', id: 'export-done' }, h('strong', null, '내려받기 폴더에 저장했어요'), h('p', null, st.done.filename), h('p', { class: 'muted small' }, `${(st.done.bytes / 1048576).toFixed(1)}MB · 카드 PNG, 캡션, 해시태그${p.shorts ? ', 쇼츠 대본' : ''}가 들어 있어요. 올리기 전에 캡션을 한 번 더 봐 주세요.`)),
       h('button', { type: 'button', class: 'btn btn-block', onclick: close }, '닫기'));
   } else if (st.confirming) {
     footer.push(h('div', { class: 'warn-box', id: 'export-confirm' }, h('strong', null, `아직 해결하지 않은 항목이 ${u.total}개 있어요`),
-      h('p', null, '그대로 올리면 근거 없는 말이나 빠진 링크가 그대로 나갈 수 있어요. 그래도 내려받을까요?')),
+      h('p', null, '그대로 올리면 광고 표기가 빠지거나 숨긴 번호가 그대로 나갈 수 있어요. 그래도 내려받을까요?')),
     h('div', { class: 'btn-row' },
       h('button', { type: 'button', class: 'btn', id: 'btn-export-back', onclick: () => { st.confirming = false; renderExport(); } }, '아니요, 고칠게요'),
       h('button', { type: 'button', class: 'btn btn-primary', id: 'btn-export-force', onclick: doExport }, '그래도 내려받기')));
@@ -156,7 +155,7 @@ async function doExport() {
     await ensureCardFont(p.carousel.font);
     const carousel = { ...p.carousel, hasPartnersLink: !!p.link };
     const zip = await buildExportZip(carousel, {
-      caption: c.text, hashtags: finalTags(), shortsScript: shortsText(p.shorts),
+      caption: c.text, hashtags: finalTags(), shortsScript: p.shorts ? shortsText(p.shorts) : '',
       include9x16: st.opts.c9x16, include1x1: st.opts.c1x1, includeTextless: st.opts.textless,
       onProgress: ({ done, total, label }) => { st.busy = { pct: Math.round((done / Math.max(1, total)) * 90), label: `${label} 그리는 중` }; updateProgress(); },
     });

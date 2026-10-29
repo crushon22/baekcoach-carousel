@@ -83,7 +83,7 @@ export function collectImageIds(p) {
 /** 캡션 최종본(고지 첫 줄·링크·안내 포함). 내보내기와 같은 함수를 쓴다. */
 export function composed(project = S.project) {
   if (!project) return null;
-  return composeCaption({ caption: project.caption || '', link: project.link || '', disclosureVariant: S.settings?.disclosureVariant ?? 0 });
+  return composeCaption({ caption: project.caption || '', link: project.link || '', disclosureVariant: S.settings?.disclosureVariant ?? 0, disclosure: !!S.settings?.captionDisclosure });
 }
 
 /** 해시태그 최종본: 고정 태그를 합치고 중복 제거 */
@@ -138,12 +138,11 @@ export function updateStatus() {
   if (!chip) return;
   const p = S.project;
   if (!p || (S.phase !== 'ready' && !(p.issues && p.score))) { chip.hidden = true; return; }
-  const n = factIssues().length;
   const total = p.score?.total;
   chip.hidden = false;
   chip.textContent = `${total ?? '-'}점`;
-  chip.dataset.level = n ? 'warn' : 'ok';
-  chip.setAttribute('aria-label', `근거 없음 ${n}건, 저장 가능성 ${total ?? '-'}점. 누르면 근거·검수 탭을 엽니다.`);
+  chip.dataset.level = total != null && total < 80 ? 'warn' : 'ok';
+  chip.setAttribute('aria-label', `캐러셀 점수 ${total ?? '-'}점. 누르면 검수 탭을 엽니다.`);
 }
 
 // ───────────────────────── 폰 프레임 ─────────────────────────
