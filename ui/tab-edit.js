@@ -87,7 +87,7 @@ export function renderEdit() {
       ui.photosOpen ? photoPicker(card) : null,
       ui.aiOpen ? aiPanel(card) : null,
       card.imageId ? h('div', { class: 'btn-row' },
-        h('span', { class: 'muted small grow' }, card.imageIsGenerated ? '지금 사진: AI가 만든 연출 이미지 (카드에 표시가 붙어요)' : '지금 사진이 들어 있어요'),
+        h('span', { class: 'muted small grow' }, card.imageIsGenerated ? '지금 사진: AI가 만든 연출 이미지 (카드에는 표시하지 않아요 · 올릴 때 AI 표시를 체크하세요)' : '지금 사진이 들어 있어요'),
         h('button', { type: 'button', class: 'btn', id: 'btn-photo-transform', onclick: transformPhoto }, 'AI로 바꾸기'),
         h('button', { type: 'button', class: 'btn', id: 'btn-photo-remove', onclick: removePhoto }, '사진 빼기')) : h('p', { class: 'muted small' }, '이 카드에는 사진이 없어요.')),
 
@@ -213,7 +213,7 @@ function removePhoto() {
 
 function aiPanel(card) {
   return h('div', { class: 'ai-panel', id: 'ai-panel' },
-    h('p', { class: 'muted small' }, '누를 때만 만들어요. 사진에는 글자가 들어가지 않고, 카드에 "연출 이미지" 표시가 붙어요. 상품 모양은 바꾸지 않아요.'),
+    h('p', { class: 'muted small' }, '누를 때만 만들어요. 사진에는 글자·워터마크가 들어가지 않고, 카드에도 AI 표시를 넣지 않아요(올릴 때 AI 표시를 직접 체크하세요). 상품 모양은 바꾸지 않아요.'),
     h('div', { class: 'chips', role: 'group', 'aria-label': '분위기' },
       ...IMAGE_CHIPS.map((c) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(ui.chips.has(c)), onclick: (e) => { ui.chips.has(c) ? ui.chips.delete(c) : ui.chips.add(c); e.currentTarget.setAttribute('aria-pressed', String(ui.chips.has(c))); } }, c))),
     h('button', { type: 'button', class: 'btn btn-primary btn-block', id: 'btn-ai-make', disabled: ui.busy === 'image', onclick: makeAiImage }, ui.busy === 'image' ? '만드는 중… (최대 1분)' : '이 카드 사진 만들기'),

@@ -163,7 +163,7 @@ export async function renderPhotoEdit(host) {
       h('div', { class: 'btn-row' },
         h('button', { type: 'button', class: 'btn grow', id: 'btn-photo-replace', onclick: () => replacePhoto(host) }, '내 사진으로 바꾸기'),
         h('button', { type: 'button', class: 'btn grow', id: 'btn-photo-transform', disabled: !card.imageId, onclick: () => transformPhoto(host) }, 'AI로 사진 바꾸기')),
-      card.imageIsGenerated ? h('p', { class: 'muted small', id: 'photo-gen-note' }, '지금 사진: AI로 바꾼 연출 이미지 (카드에 표시가 붙어요)') : null),
+      card.imageIsGenerated ? h('p', { class: 'muted small', id: 'photo-gen-note' }, '지금 사진: AI로 바꾼 연출 이미지 (카드에는 표시하지 않아요 · 올릴 때 AI 표시를 체크하세요)') : null),
 
     fold({ id: 'rewrite-group', icon: 'sparkle', title: '다시 쓰기', open: true },
       h('button', { type: 'button', class: 'btn btn-block', id: 'btn-rewrite', disabled: !!ui.busy, onclick: () => rewrite(host) }, ui.busy === 'rewrite' ? '3가지로 쓰는 중…' : '다시 쓰기 3안 보기'),

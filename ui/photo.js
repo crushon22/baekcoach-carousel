@@ -129,7 +129,7 @@ export function photoStrip(list, { key, listId, uploadId, firstLabel = '커버',
       icon('sparkle', { size: 18 }), busy ? `AI 사진 만드는 중… ${recreating.done}/${recreating.total}` : !want ? `사진이 꽉 찼어요 (${MAX_PHOTOS}장)` : `AI 사진 ${want}장 추가 만들기`),
     busy ? h('button', { type: 'button', class: 'btn btn-block recreate-stop', id: `${listId}-recreate-stop`, disabled: recreating.stopped, onclick: () => cancelRecreate() },
       recreating.stopped ? '멈추는 중…' : '멈추기') : null,
-    h('p', { class: 'muted small' }, '원본은 그대로 두고, 같은 상품을 다른 각도·구도·배경으로 찍은 사진을 뒤에 더 넣어요. 만든 사진은 원본과 같은 제품인지(색·모양) 확인해서, 다르면 넣지 않아요. 카드에는 "연출 이미지" 표시가 붙어요.')) : null;
+    h('p', { class: 'muted small' }, '원본은 그대로 두고, 같은 상품을 다른 각도·구도·배경으로 찍은 사진을 뒤에 더 넣어요. 만든 사진은 원본과 같은 제품인지(색·모양) 확인해서, 다르면 넣지 않아요. 사진과 카드에 AI 표시는 넣지 않아요(올릴 때 직접 체크).')) : null;
   const actions = sel !== null && list[sel] ? h('div', { class: 'photo-actions', id: `${listId}-actions` },
     h('button', { type: 'button', class: 'btn', 'data-act': 'up', disabled: sel === 0, onclick: () => move(list, sel, -1, key) }, icon('arrowLeft', { size: 18 }), '앞으로'),
     h('button', { type: 'button', class: 'btn', 'data-act': 'down', disabled: sel === list.length - 1, onclick: () => move(list, sel, 1, key) }, '뒤로', icon('arrowRight', { size: 18 })),

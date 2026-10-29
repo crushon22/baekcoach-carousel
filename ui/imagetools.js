@@ -102,7 +102,7 @@ function render() {
       res?.check?.same === false ? h('p', { class: 'warn-line', id: 'imgtool-check' }, `⚠️ 원본과 달라 보여요: ${(res.check.differences || []).join(', ') || res.check.summary || '색·모양이 바뀜'}. 그래도 쓰려면 [이 사진 쓰기], 아니면 [다시 바꾸기].`)
         : res?.check?.same === true ? h('p', { class: 'ok-line small', id: 'imgtool-check' }, '✅ 원본과 같은 제품으로 확인했어요.') : null,
       h('div', { class: 'label' }, '바꾸는 방법'), kinds, options, help, extra,
-      h('p', { class: 'muted small' }, '누를 때만 만들어요. 상품 모양은 그대로 두고, 사진에 글자는 넣지 않아요. 바꾼 사진을 쓰면 카드에 "연출 이미지" 표시가 붙어요.'),
+      h('p', { class: 'muted small' }, '누를 때만 만들어요. 상품 모양은 그대로 두고, 사진에 글자·워터마크는 넣지 않아요. 카드에도 AI 표시를 넣지 않으니 올릴 때 AI 표시를 직접 체크하세요.'),
       h('details', { class: 'extra imgtool-other', open: !!fb },
         h('summary', null, '다른 AI에서 만들기 (키 한도가 없을 때)'), manual),
       h('div', { class: 'sheet-foot imgtool-foot' }, ...foot))));
