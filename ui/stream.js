@@ -19,7 +19,7 @@ function skeletonProject(product, { link, options = {} }) {
       peek: false, panorama: false, hasPartnersLink: !!link, cards: [],
       font: S.font || 'pretendard',
       ...adFields(adCfg(photo ? 'photo' : 'cardnews')),
-      ...(photo ? { mode: 'photo', overlayStyle: options.overlayStyle || 'outline' } : {}),
+      ...(photo ? { mode: 'photo', overlayStyle: options.overlayStyle || 'gradient' } : {}),
     },
     facts: [], factsInfo: null, caption: '', hashtags: [], issues: [], score: null, shorts: null, notices: [],
   };

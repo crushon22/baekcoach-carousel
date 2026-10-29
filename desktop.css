@@ -11,7 +11,7 @@
 @media (min-width: 1040px) {
   html.web {
     --d-ink: #0A0A0A; --d-body: #3F3F46; --d-sub: #71717A; --d-line: #E4E4E7;
-    --d-side: #FAFAFA; --d-canvas: #F4F4F5; --d-hover: #EFEFF1; --d-side-w: 240px; --d-insp-w: 480px;
+    --d-side: #FAFAFA; --d-canvas: #F4F4F5; --d-hover: #EFEFF1; --d-side-w: 240px; --d-insp-w: 440px;
     --ink: var(--d-ink); --body: var(--d-body); --sub: var(--d-sub); --muted: var(--d-sub); --line: var(--d-line);
     --font-cute: "Pretendard UI", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   }
@@ -92,12 +92,12 @@
 
   /* ── 시작 화면: 왼쪽 입력(만드는 칸) · 오른쪽 첫 카드 미리보기 ── */
   html.web body[data-phase="start"] #app, html.web body[data-phase="loading"] #app {
-    display: grid; grid-template-columns: minmax(0, 640px) minmax(0, 400px); column-gap: 56px; align-items: start; justify-content: center;
+    display: grid; grid-template-columns: minmax(0, 600px) minmax(0, 480px); column-gap: 48px; align-items: start; justify-content: center;
     max-width: none; padding: 56px 48px 80px; grid-template-rows: none;
   }
   html.web body[data-phase="start"] #app > * { grid-column: 1; }
   html.web body[data-phase="start"] #app > #livepreview { grid-column: 2; grid-row: 1 / span 12; position: sticky; top: 40px; align-self: start; padding: 20px; background: var(--d-canvas); border-radius: 20px; }
-  html.web body[data-phase="start"] .preview-frame { max-width: 360px; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.08); border-radius: 14px; }
+  html.web body[data-phase="start"] .preview-frame { max-width: 440px; margin: 0 auto; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.08); border-radius: 14px; }
   html.web body[data-phase="start"] #hero { padding: 0; }
   html.web body[data-phase="start"] .hero-title { font-size: 30px; line-height: 1.35; color: var(--d-ink); margin: 0; }
   html.web body[data-phase="start"] #modebar { display: flex; flex-direction: column; gap: 16px; }
@@ -129,9 +129,10 @@
   html.web body[data-phone] #app > #banner:not([hidden]), html.web body[data-phone] #app > #strip { margin-top: 24px; }
   html.web body[data-phone] #app > #phone {
     grid-column: 1; grid-row: 1 / span 20; margin: 0; position: sticky; top: 0; height: 100vh; align-self: start;
-    display: flex; align-items: center; justify-content: center; padding: 32px 40px;
+    display: flex; align-items: center; justify-content: center; padding: 32px 24px;
   }
-  html.web body[data-phone] #phone .bcpf { width: min(440px, 100%, calc((100vh - 64px) * 0.62)); max-width: 440px; border: 0; border-radius: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 20px 48px rgba(0,0,0,.10); }
+  /* 미리보기는 크게(2026-10-29 사용자 요청): 폭 560 까지, 세로는 화면 높이에 맞춰 */
+  html.web body[data-phone] #phone .bcpf { width: min(560px, 100%, calc((100vh - 64px) * 0.72)); max-width: 560px; border: 0; border-radius: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 20px 48px rgba(0,0,0,.10); }
   html.web body[data-phone] .tabs { top: 0; margin-inline: -28px; padding-inline: 16px; }
   html.web body[data-phone] #sheet { padding-bottom: 180px; }
   html.web body[data-phone] [role=tabpanel] { padding-top: 20px; }

@@ -1,5 +1,5 @@
 /* 폰 프레임 미리보기 (lib/phone-frame.js 가 <link> 로 자동 로드). 사이드 패널 폭 360~420px 기준. */
-.bcpf { box-sizing: border-box; width: 100%; max-width: 420px; margin: 0 auto; background: #fff; color: #1a1f2b; border: 1px solid #dbdbdb; border-radius: 28px; overflow: hidden; outline: none; font: 500 14px/1.45 "BC Pretendard", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; user-select: none; -webkit-user-select: none; }
+.bcpf { box-sizing: border-box; width: 100%; max-width: 520px; margin: 0 auto; background: #fff; color: #1a1f2b; border: 1px solid #dbdbdb; border-radius: 28px; overflow: hidden; outline: none; font: 500 14px/1.45 "BC Pretendard", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; user-select: none; -webkit-user-select: none; }
 .bcpf:focus-visible { box-shadow: 0 0 0 3px #2563eb66; }
 .bcpf-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
 .bcpf-avatar { width: 32px; height: 32px; border-radius: 50%; color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; flex: none; }

@@ -247,10 +247,10 @@ pre.final-caption { white-space: pre-wrap; overflow-wrap: anywhere; background: 
 .web .sheet { max-width: 560px; }
 @media (min-width: 1040px) {
   .web .topbar { padding-inline: max(16px, calc((100% - 1004px) / 2)); }
-  body[data-phone] #app { display: grid; grid-template-columns: 420px minmax(0, 560px); column-gap: 24px; align-items: start; justify-content: center; max-width: 1004px; }
+  body[data-phone] #app { display: grid; grid-template-columns: 520px minmax(0, 560px); column-gap: 24px; align-items: start; justify-content: center; max-width: 1104px; }
   body[data-phone] #app > * { grid-column: 2; }
   body[data-phone] #app > #phone { grid-column: 1; grid-row: 1 / span 12; position: sticky; top: 72px; align-self: start; }
-  .web .dock { padding-left: max(16px, calc((100% - 1004px) / 2 + 444px)); padding-right: max(16px, calc((100% - 1004px) / 2)); }
+  .web .dock { padding-left: max(16px, calc((100% - 1104px) / 2 + 544px)); padding-right: max(16px, calc((100% - 1104px) / 2)); }
   .web .tabs { top: 56px; }
 }
 

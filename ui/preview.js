@@ -44,7 +44,7 @@ function buildCarousel() {
   const base = { type: 'sales', template: 'basic', brandColor: BRAND, accountName: S.settings?.accountName || '', hasPartnersLink: false, font: S.font || 'pretendard', ...adFields(adCfg(S.mode === 'photo' ? 'photo' : 'cardnews')) };
   if (S.mode === 'photo') {
     const lines = toLines(text);
-    return { ...base, mode: 'photo', overlayStyle: S.photoStyle || 'outline',
+    return { ...base, mode: 'photo', overlayStyle: S.photoStyle || 'gradient',
       cards: [{ index: 0, role: '커버', layout: 'overlay', imageSlot: 'hero', ...(imageId ? { imageId } : {}), headline: lines.join('\n'), body: '', overlay: { lines, position: 'top', size: 'xl' } }] };
   }
   return { ...base, mode: 'cardnews',

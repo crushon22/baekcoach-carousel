@@ -119,7 +119,7 @@ async function sceneModes(stage, scene, { still }) {
   const host = h('div', { class: 'guide-card-host' });
   stage.replaceChildren(h('div', { class: 'guide-split guide-col', 'aria-hidden': 'true' }, h('div', { class: 'mode-tabs mock-seg' }, a, b), host));
   const cn = cnCarousel([{ index: 0, role: '훅', headline: PRODUCT, body: '먼저 확인하면\n후회가 줄어요', layout: 'title' }]);
-  const photo = { type: 'sales', template: 'basic', brandColor: '#2F5BEA', accountName: 'baekcoach', mode: 'photo', overlayStyle: 'outline', adLabel: true, font: 'pretendard', hasPartnersLink: false,
+  const photo = { type: 'sales', template: 'basic', brandColor: '#2F5BEA', accountName: 'baekcoach', mode: 'photo', overlayStyle: 'gradient', adLabel: true, font: 'pretendard', hasPartnersLink: false,
     cards: [{ index: 0, role: '커버', layout: 'overlay', imageSlot: 'hero', imageId: photoIds[0], headline: '청소기 무겁다면\n이거 보세요', body: '', overlay: { lines: ['청소기 무겁다면', '이거 보세요'], position: 'top', size: 'xl' } }] };
   const show = (isPhoto) => { a.setAttribute('aria-selected', String(!isPhoto)); b.setAttribute('aria-selected', String(isPhoto)); draw(host, isPhoto ? photo : cn, 0, scene); };
   show(false);

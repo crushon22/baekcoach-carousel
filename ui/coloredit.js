@@ -58,7 +58,7 @@ export function colorPanel({ extraAccent, onChange }) {
   const p = S.project;
   const c = p.carousel;
   const photo = c.mode === 'photo';
-  const style = c.overlayStyle || 'outline';
+  const style = c.overlayStyle || 'gradient';
   const set = (group, key, v) => { c[group] = { ...(c[group] || {}), [key]: v }; refreshAll(); scheduleSave(); onChange?.(); };
   let rows;
   if (photo) {

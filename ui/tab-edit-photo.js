@@ -43,7 +43,7 @@ const overlayOf = (c) => c.overlay || (c.overlay = { lines: String(c.headline ||
 /** 이 카드의 줄 수·글자 수 기준 (지식 파일 값, 그라데이션이면 넓혀 본다) */
 function limitFor(i) {
   if (!rules) return null;
-  const r = effectivePhotoRules(rules, S.project.carousel.overlayStyle || 'outline');
+  const r = effectivePhotoRules(rules, S.project.carousel.overlayStyle || 'gradient');
   return i === 0 ? r.cover : i === cards().length - 1 ? r.last : r.inner;
 }
 
@@ -63,7 +63,7 @@ export async function renderPhotoEdit(host) {
   if (i !== S.cardIndex || !cur()) return;
   const n = cards().length;
   const ov = overlayOf(card);
-  const style = p.carousel.overlayStyle || 'outline';
+  const style = p.carousel.overlayStyle || 'gradient';
   const lim = limitFor(i);
   if (ui.draftFor !== i || !ui.draft) { ui.draft = (ov.lines && ov.lines.length ? ov.lines : ['']).slice(0, 3); ui.draftFor = i; }
 

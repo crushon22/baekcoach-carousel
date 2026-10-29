@@ -34,7 +34,7 @@ export async function loadModePrefs() {
   try {
     const m = await store.kvGet('panel.mode', null);
     if (m?.mode === 'photo' || m?.mode === 'cardnews') S.mode = m.mode;
-    if (STYLE_LABEL[m?.style]) S.photoStyle = m.style;
+    // 글씨 스타일은 기억하지 않는다 — 초안은 무조건 그라데이션(2026-10-29 사용자 결정)
     if (m?.ad && typeof m.ad === 'object') S.ad = m.ad;
     else if (typeof m?.adLabel === 'boolean') S.ad = { photo: { on: m.adLabel } };
     if (typeof m?.font === 'string') S.font = m.font;
@@ -361,7 +361,7 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
     h('div', { class: 'label' }, '글씨 스타일'), styleButtons()));
   kids.push(infoForm());
   kids.push(h('div', { class: 'make-wrap' },
-    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', disabled: n < MIN_PHOTOS || !!recreating || !!S.picking, onclick: () => fn.onMake() }, recreating ? 'AI 사진 만드는 중…' : S.picking ? '쓸 사진 고르는 중…' : '만들기'),
+    h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', disabled: n < MIN_PHOTOS || !!recreating || !!S.picking, onclick: () => fn.onMake() }, recreating ? 'AI 사진 만드는 중…' : S.picking ? (S.photos.length > clampCount(S.photoCount) ? '쓸 사진 고르는 중…' : '사진 순서 정하는 중…') : '만들기'),
     n < MIN_PHOTOS ? h('p', { class: 'warn-line small center', id: 'photo-few' }, `사진을 ${MIN_PHOTOS}장 이상 올려 주세요 (지금 ${n}장)`) : null));
 }
 
@@ -369,7 +369,7 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
 function countPicker() {
   const want = clampCount(S.photoCount);
   const n = S.photos.length;
-  const noteOf = (w) => (n && n < w ? `사진 ${n}장 + AI 사진 ${w - n}장으로 ${w}장을 만들어요.` : n > w ? `사진 ${n}장 중에서 AI 가 ${w}장을 골라 ${w}장으로 만들어요.` : `사진이 모자라면 AI 사진으로 채우고, 많으면 AI 가 ${w}장을 골라요(최대 ${MAX_PHOTOS}장).`);
+  const noteOf = (w) => (n && n < w ? `사진 ${n}장 + AI 사진 ${w - n}장으로 ${w}장을 만들어요.` : n > w ? `사진 ${n}장 중에서 AI 가 ${w}장을 골라 ${w}장으로 만들어요.` : `사진이 모자라면 AI 사진으로 채우고, 많으면 AI 가 ${w}장을 골라요(최대 ${MAX_PHOTOS}장).`) + ' 첫 장은 AI 가 가장 눈에 띄는 사진으로 골라요.';
   const note = h('p', { class: 'muted small', id: 'photo-count-note' }, noteOf(want));
   const inp = h('input', { type: 'number', class: 'input count-input', id: 'photo-count-input', inputmode: 'numeric', min: String(MIN_PHOTOS), max: String(MAX_PHOTOS), step: '1', value: String(want), 'aria-label': '캐러셀 장수' });
   // 칸에 적는 동안(1 → 10 처럼 지나가는 값)은 상태를 바꾸지 않고 안내문만 맞춘다. 칸을 나가거나 Enter 를 치면(change) 그때 확정한다.
@@ -389,14 +389,15 @@ function countPicker() {
 }
 
 /**
- * 올린 사진이 목표 장수보다 많으면 어느 사진을 쓸지 AI 가 고른다(ai.pickPhotos, 2026-10-29 사용자 요청: "5장 요청하면 분석해서 적절한 걸로").
- * 목표 장수가 곧 캐러셀 장수다 — 5장을 적었으면 사진이 8장이어도 5장. 같은 사진·장수면 다시 고르지 않는다(S.photoPick). 못 고르면 앞에서부터.
+ * 만들기 직전에 AI 가 쓸 사진과 카드 순서를 정한다(ai.pickPhotos, 2026-10-29 사용자 요청: "5장 요청하면 분석해서 적절한 걸로" · "올린 순서가 아니라 가장 임팩트 있는 장면을 첫 장에").
+ * 목표 장수가 곧 캐러셀 장수다 — 5장을 적었으면 사진이 8장이어도 5장. 사진이 그보다 적거나 같으면 전부 쓰되 커버(1번)를 AI 가 고른다.
+ * 같은 사진·장수면 다시 고르지 않는다(S.photoPick). 못 고르면 올린 순서대로.
  * @returns {Promise<{imageIds:string[], picked:{from:number, want:number, why:string}|null}>}
  */
 export async function pickPhotosForMake() {
-  const want = clampCount(S.photoCount);
+  const want = Math.min(clampCount(S.photoCount), S.photos.length);   // 사진이 목표보다 적으면 있는 만큼(순서만 정한다)
   const ids = S.photos.slice(0, MAX_PHOTOS);
-  if (ids.length <= want) return { imageIds: ids, picked: null };
+  if (ids.length < MIN_PHOTOS) return { imageIds: ids, picked: null };
   const key = `${want}:${ids.join(',')}`;
   if (S.photoPick?.key === key) return S.photoPick.result;
   S.picking = true; fn.renderStage();
@@ -409,7 +410,7 @@ export async function pickPhotosForMake() {
   }
   S.picking = false;
   const chosen = keep && keep.length === want && keep.every((i) => Number.isInteger(i) && ids[i]) ? keep.map((i) => ids[i]) : ids.slice(0, want);
-  const result = { imageIds: chosen, picked: { from: ids.length, want, why } };
+  const result = { imageIds: chosen, picked: { from: ids.length, want, why, reordered: chosen.join() !== ids.slice(0, want).join() } };
   S.photoPick = { key, result };
   fn.renderStage();
   return result;

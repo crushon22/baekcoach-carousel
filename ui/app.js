@@ -26,7 +26,7 @@ export const S = {
   genImages: new Set(),    // 시작 화면에서 AI 로 바꾼 사진 imageId (만든 카드에 "연출 이미지" 표시)
   genFrom: new Map(),      // AI 로 바꾼 사진 imageId → 처음 원본 imageId (상품 사진 고르기에서 "이미 넣음"으로 보기)
   font: 'pretendard',      // 카드 글씨체(lib/fonts.js CARD_FONTS 의 key). carousel.font 로 들어간다
-  photoStyle: 'outline',   // 사진 캐러셀 글씨 스타일
+  photoStyle: 'gradient',  // 사진 캐러셀 글씨 스타일 — 초안은 무조건 그라데이션(2026-10-29 사용자 결정), 결과 화면에서 바꿀 수 있다
   photoCount: 5,           // 사진 캐러셀 목표 장수(2~10, 직접 적음). 사진이 모자라면 AI 사진으로 채운다(ui/photo.js maybeAutoFill)
   autoFillKey: '',         // 같은 사진 상태에서 자동 채우기가 두 번 돌지 않게
   picking: false,          // 만들기 직전 "쓸 사진 고르는 중"(ui/photo.js pickPhotosForMake)
