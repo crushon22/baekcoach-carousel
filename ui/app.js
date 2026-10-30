@@ -34,6 +34,8 @@ export const S = {
   photoPick: null,         // {key, why, from, want} 마지막으로 AI 가 세운 줄(같은 사진·장수면 다시 안 세움)
   photoManual: false,      // 사람이 줄을 손댔으면 AI 가 다시 세우지 않는다([AI 가 다시 고르기]로 해제)
   lastPick: null,          // 마지막 만들기에서 고른 정보 {from, want, why} — 결정 띠에 "N장 중 골라서"
+  designLast: null,        // 마지막 카드뉴스 디자인 {cardnews:{template,colors}} — 다음 초안 기본값(kv design.last, ui/photo.js rememberDesign)
+  fillStopped: false,      // 만들기 직전 AI 사진 채우기를 사람이 멈췄는지
   productRef: null,        // 이름으로 찾은 제품 모습 {key(이름), ref:{look,mustKeep,avoid}|null, busy} (ui/photo.js ensureProductRef) — AI 사진 요청·검증에 넣는다
   tease: true,             // 댓글 유도(번호·색상명 숨기기). 기본 켬, 마지막 선택 기억(ui/tease.js)
   ad: {},                  // 광고 표기 설정 {cardnews:{on,position,look,text,size}, photo:{…}} (ui/adlabel.js 의 adCfg 로 읽는다)
@@ -131,6 +133,7 @@ export async function saveNow() {
     try {
       const rec = await store.putProject(p);
       p.id = rec.id;
+      fn.rememberDesign?.(p);   // 템플릿·색·광고 표기 모양을 다음 초안 기본값으로(ui/photo.js)
       await store.attachImages(collectImageIds(p), p.id);
       await store.putChat(p.id, S.chat.slice(-40));
     } catch (e) { showError(e); }

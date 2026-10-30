@@ -23,8 +23,7 @@ export const STYLES = [
 ];
 export const STYLE_LABEL = Object.fromEntries(STYLES.map((s) => [s.key, s.label]));
 export const MAX_PHOTOS = 10;         // 캐러셀 최대 10장(2026-10-29 사용자 결정: 장수는 직접 적고 최대 10)
-export const MAX_POOL = 14;           // 사진 줄(후보)은 캐러셀보다 많아도 된다 — AI 사진을 여유 있게 만들어 두고 그중에서 고른다(2026-10-29 사용자 요청)
-export const EXTRA_AI = 2;            // 자동 채우기 때 모자란 수보다 이만큼 더 만든다(고를 수 있게)
+export const MAX_POOL = 14;           // 사진 줄(후보)은 캐러셀보다 많아도 된다 — 사진이 많으면 AI 가 쓸 사진을 고른다(2026-10-29 사용자 요청)
 export const MIN_PHOTOS = 2;
 export const DEFAULT_COUNT = 5;       // "몇 장으로 만들까요?" 기본값 — 모자라면 AI 사진으로 채운다
 /** 목표 장수 정리: 2~10 정수만, 아니면 기본 5 */
@@ -45,6 +44,24 @@ export async function loadModePrefs() {
     if (typeof m?.tease === 'boolean') S.tease = m.tease;
     if (m?.photoCount != null) S.photoCount = clampCount(m.photoCount);
   } catch { /* 기억 못 해도 기본값 */ }
+  try { const d = await store.kvGet('design.last', null); if (d && typeof d === 'object') S.designLast = d; } catch { /* 없으면 기본 디자인 */ }
+}
+
+/**
+ * 결과에서 고른 카드뉴스 디자인(템플릿·색)을 다음 초안의 기본값으로 — 매번 다시 고르지 않게(2026-10-30 사용자 요청). ui/app.js saveNow 가 부른다.
+ * 사진 캐러셀은 글씨체·광고 표기·장수·댓글 유도를 이미 시작 화면에서 기억하고(panel.mode), 강조색은 제품 색에 맞춰 매번 정하므로 여기 넣지 않는다.
+ */
+export function rememberDesign(p) {
+  const c = p?.carousel; if (!c || c.mode === 'photo') return;
+  const d = { ...(S.designLast || {}), cardnews: { template: c.template, ...(c.colors ? { colors: c.colors } : {}) } };
+  S.designLast = d;
+  store.kvSet('design.last', d).catch(() => {});
+}
+/** 만들기 옵션에 섞을 기억된 디자인(카드뉴스만) */
+export function designDefaults(mode) {
+  const d = mode === 'cardnews' ? S.designLast?.cardnews : null;
+  if (!d) return {};
+  return { ...(d.template ? { template: d.template } : {}), ...(d.colors ? { colors: d.colors } : {}) };
 }
 export function fontCard() {
   return h('section', { class: 'extra', id: 'font-card' },
@@ -100,24 +117,27 @@ export async function addPhotos(files) {
 }
 
 /**
- * 사진이 목표 장수(S.photoCount)보다 모자라면 AI 사진을 자동으로 만들어 채운다(2026-10-29 사용자 요청: "사진이 3장만 들어가도 자동으로").
- * 상품 알아보기가 돌고 있으면 끝난 뒤(제품 모습을 요청문에 넣으려고) identify.js 가 다시 부른다. 같은 사진 상태에서는 한 번만 돈다. 시험용 dev:ai.autoFill=false 면 안 한다.
+ * 사진이 바뀌었을 때(올리기·빼기·장수 바꾸기·알아보기 끝). AI 사진은 여기서 만들지 않는다 — 만들기를 누를 때 부족한 만큼만(fillForMake, 2026-10-30 사용자 결정:
+ * "AI 이미지를 먼저 만들어 보여 주는 게 아니라, 사진 넣고 장수 정하고 만들기 하면 부족한 만큼 만든다"). 사진이 장수보다 많으면 AI 가 쓸 사진·순서를 미리 정해 보여 준다.
  */
 export async function maybeAutoFill() {
   if (S.mode !== 'photo' || S.phase !== 'start' || recreating) return;
-  const have = S.photos.length;
+  if (S.photos.length > clampCount(S.photoCount)) schedulePick();
+}
+
+/**
+ * 만들기 직전: 사진이 적은 장수보다 모자라면 그만큼 AI 사진을 만든다(원본 참고·제품 모습·검증 그대로). 끝나면 true, 사람이 멈췄으면 false.
+ * 알아보기가 돌고 있으면 끝날 때까지 기다린다(제품 모습을 요청문에 넣으려고).
+ */
+export async function fillForMake() {
   const want = clampCount(S.photoCount);
-  if (!have) return;
-  if (have >= want) { schedulePick(); return; }   // 모자라지 않으면 만들 것 없이 순서(커버)만 AI 가 정한다
-  if (S.ident?.status === 'busy') return;   // 알아보기가 끝나면 identify.js 가 다시 부른다(제품 모습을 넣어 만들려고)
-  const key = `${want}:${[...S.photos].sort().join(',')}`;   // 순서는 상관없다(AI 가 줄을 다시 세워도 또 만들지 않게)
-  if (S.autoFillKey === key) return;
-  S.autoFillKey = key;
-  try { if ((await store.kvGet('dev:ai', null))?.autoFill === false) { schedulePick(); return; } } catch { /* 시험용 값 없음 */ }
-  if (S.ident?.status === 'busy') { S.autoFillKey = ''; return; }   // 기다리는 사이 알아보기가 시작됐으면 그 뒤로 미룬다
-  if (S.photos.length !== have || recreating) return;
-  // 모자란 수보다 EXTRA_AI 장 더 만들어 고를 수 있게 한다(2026-10-29 사용자 요청: "만드는 개수 이상으로 만들어도 된다")
-  await addAiPhotos(S.photos, 'photo-list', { total: Math.min(want - have + EXTRA_AI, MAX_POOL - have), auto: true });
+  const have = S.photos.length;
+  if (have >= want || !have) return true;
+  try { if ((await store.kvGet('dev:ai', null))?.autoFill === false) return true; } catch { /* 시험용 값 없음 */ }
+  if (recreating) return false;
+  const list = S.photos;
+  await addAiPhotos(list, 'photo-list', { total: want - have, auto: true });
+  return isLiveList(list) && S.phase === 'start' && !S.fillStopped;
 }
 
 // ───────────────────────── 쓸 사진·순서 고르기 ─────────────────────────
@@ -159,7 +179,7 @@ export async function runPick() {
 /** 사진 모드에서 만들기를 잠시 막는 이유(없으면 ''): AI 사진 만드는 중 · 쓸 사진 고르는 중. start.js updateMakeEnabled 가 버튼에 반영한다 */
 export function makeBlock() {
   if (S.mode !== 'photo' || S.phase !== 'start') return '';
-  if (recreating) return 'AI 사진 만드는 중…';
+  if (recreating) return `AI 사진 만드는 중… ${recreating.done}/${recreating.total}`;
   if (S.picking) return 'AI 가 쓸 사진 고르는 중…';
   return '';
 }
@@ -292,6 +312,7 @@ async function addAiPhotos(list, listId, { total: wantTotal = ADD_AI_COUNT, auto
   const total = Math.min(wantTotal, Math.max(0, MAX_POOL - list.length));
   if (!total) { if (!auto) toast(`사진은 ${MAX_POOL}장까지예요. 몇 장 빼고 다시 눌러 주세요.`, { kind: 'warn' }); return; }
   const job = recreating = { listId, done: 0, total, stopped: false, runs: new Set(), rejected: 0, rejectedWhy: '', unverified: 0, auto };
+  S.fillStopped = false;
   fn.renderStage();
   const title = (S.manual.title || '').trim() || S.rec?.product?.title;
   const look = S.ident?.look || '';
@@ -327,9 +348,9 @@ async function addAiPhotos(list, listId, { total: wantTotal = ADD_AI_COUNT, auto
   const rej = (rejected ? ` 원본과 달라 보여서 뺀 사진 ${rejected}장${rejectedWhy ? `(${rejectedWhy})` : ''}.` : '') + (unverified ? ` ${unverified}장은 원본과 대조할 부분이 적어 확인하지 못했어요. 제품이 맞는지 봐 주세요.` : '');
   if (stop?.error) showError(stop.error);
   else if (stop) toast(`AI 사진 ${done}장을 추가했어요. ${stop.messageKo || '이미지 생성 한도에 걸렸어요.'}`, { kind: 'warn', ms: 7000 });
-  else if (job.stopped) toast(done ? `멈췄어요. AI 사진 ${done}장은 추가됐어요.` : '멈췄어요. 추가한 사진은 없어요.');
+  else if (job.stopped) { S.fillStopped = true; toast(done ? `멈췄어요. AI 사진 ${done}장은 추가됐어요.` : '멈췄어요. 추가한 사진은 없어요.'); }
   else if (!done && rejected) toast(`AI 사진을 넣지 못했어요.${rej} 다시 눌러 보세요.`, { kind: 'warn', ms: 7000 });
-  else if (auto) toast(`AI 사진 ${done}장을 만들어 채웠어요(고를 수 있게 넉넉히). 원본은 그대로예요.${rej}`, { ms: rej ? 7000 : 5000 });
+  else if (auto) toast(`AI 사진 ${done}장을 만들어 채웠어요. 원본은 그대로예요.${rej}`, { ms: rej ? 7000 : 5000 });
   else toast(`AI 사진 ${done}장을 뒤에 추가했어요. 원본은 그대로예요.${rej}`, { ms: rej ? 7000 : 4000 });
 }
 
@@ -472,7 +493,7 @@ export function renderPhotoStart(kids, { keyNotice, hasKey }) {
 /** 장수 안내 한 줄 */
 function noteText(w) {
   const n = S.photos.length;
-  return (n && n < w ? `사진 ${n}장에 AI 사진 ${Math.min(w - n + EXTRA_AI, MAX_POOL - n)}장을 더 만들고(고를 수 있게 ${EXTRA_AI}장 여유) 그중 ${w}장으로 만들어요.` : n > w ? `사진 ${n}장 중에서 AI 가 ${w}장을 골라 ${w}장으로 만들어요. 아래에서 바꿀 수 있어요.` : `사진이 모자라면 AI 사진으로 채우고, 많으면 AI 가 ${w}장을 골라요(캐러셀 최대 ${MAX_PHOTOS}장).`) + ' 첫 장은 AI 가 가장 눈에 띄는 사진으로 골라요.';
+  return (n && n < w ? `사진 ${n}장 + AI 사진 ${w - n}장으로 ${w}장을 만들어요. AI 사진은 만들기를 누르면 만들어요(원본과 같은 제품으로).` : n > w ? `사진 ${n}장 중에서 AI 가 ${w}장을 골라 ${w}장으로 만들어요. 아래에서 바꿀 수 있어요.` : `사진이 모자라면 만들기를 누를 때 AI 사진으로 채우고, 많으면 AI 가 ${w}장을 골라요(캐러셀 최대 ${MAX_PHOTOS}장).`) + ' 첫 장은 AI 가 가장 눈에 띄는 사진으로 골라요.';
 }
 /** "사진 N장 · 캐러셀 M장" */
 const countText = () => (S.photos.length ? `사진 ${S.photos.length}장 · 캐러셀 ${usedCount()}장` : `최대 ${MAX_POOL}장`);

@@ -11,7 +11,7 @@ import { COUNT_OPTIONS } from './ui/labels.js';
 import { renderStrip, renderStartStage, loadProduct, loadStatus, buildProduct, hasKey, updateMakeEnabled } from './ui/start.js';
 import { renderAiStatus } from './ui/aistatus.js';
 import { identBlock, resetIdent } from './ui/identify.js';
-import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate, maybeAutoFill, pickPhotosForMake, makeBlock } from './ui/photo.js';
+import { STYLES, STYLE_LABEL, loadModePrefs, saveModePrefs, MIN_PHOTOS, modeTabs, cancelRecreate, maybeAutoFill, pickPhotosForMake, makeBlock, fillForMake, designDefaults, rememberDesign } from './ui/photo.js';
 import { decorateIcons, logoMark, icon } from './ui/icons.js';
 import { renderPreview, schedulePreview } from './ui/preview.js';
 import { adCfg } from './ui/adlabel.js';
@@ -198,19 +198,21 @@ async function onMake(kind) {
   if (gate) { toast(gate, { kind: 'warn' }); document.getElementById('identify-row')?.scrollIntoView({ block: 'center' }); return; }
   if (S.mode === 'photo') {
     if (S.photos.length < MIN_PHOTOS) { toast(`사진을 ${MIN_PHOTOS}장 이상 올려 주세요.`, { kind: 'warn' }); return; }
+    // 사진이 적은 장수보다 모자라면 지금 부족한 만큼 AI 사진을 만든다(2026-10-30 사용자 결정) → 적은 장수가 곧 캐러셀 장수: 줄의 앞 N 장(AI 가 세운 순서, 또는 사람이 바꾼 순서)
+    if (!(await fillForMake())) return;   // 사람이 멈췄거나 그 사이 화면이 바뀜
+    if (S.phase !== 'start' || S.photos.length < MIN_PHOTOS) return;
     const pp = buildProduct();
-    // 적은 장수가 곧 캐러셀 장수: 사진 줄의 앞 N 장(AI 가 세운 순서, 또는 사람이 바꾼 순서)을 쓴다
     const pick = await pickPhotosForMake();
     if (S.phase !== 'start') return;
     pp.imageIds = pick.imageIds;
     S.lastPick = pick.picked;
-    await startGenerate(pp, { link: S.link || '', options: { mode: 'photo', overlayStyle: S.photoStyle, adLabel: adCfg('photo').on, tease: S.tease !== false } });
+    await startGenerate(pp, { link: S.link || '', options: { ...designDefaults('photo'), mode: 'photo', overlayStyle: S.photoStyle, adLabel: adCfg('photo').on, tease: S.tease !== false } });
     return;
   }
   const product = buildProduct(IS_WEB ? S.webKind : undefined);
   if (!product) { toast(IS_WEB && S.webKind === 'topic' ? '주제를 먼저 적어 주세요.' : '상품 이름이나 주제를 먼저 적어 주세요.', { kind: 'warn' }); document.getElementById(IS_WEB && S.webKind === 'topic' ? 'topic-text' : 'manual-title')?.focus(); return; }
   // 광고 표기 값을 처음부터 보내야 첫 점수(광고 표기 −20)와 내보내기 확인이 어긋나지 않는다
-  await startGenerate(product, { link: S.link || '', options: { adLabel: adCfg('cardnews').on, ...(product.source === 'topic' ? {} : { tease: S.tease !== false }) } });
+  await startGenerate(product, { link: S.link || '', options: { ...designDefaults('cardnews'), adLabel: adCfg('cardnews').on, ...(product.source === 'topic' ? {} : { tease: S.tease !== false }) } });
 }
 
 async function makeFromShorts(script) {
@@ -247,7 +249,7 @@ function onCardIndex() { onCardIndexChanged(); if (S.tab === 'review' && S.phase
 
 Object.assign(fn, {
   render, renderStrip, renderStage, renderModebar, renderPreview, schedulePreview, renderProgress, renderDecision, renderNotices, renderTab, openTab, onMake, makeFromShorts, startNew, openOptions,
-  regenerate, startGenerate, updateMakeEnabled, maybeAutoFill, makeBlock, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, saveModePrefs, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
+  regenerate, startGenerate, updateMakeEnabled, maybeAutoFill, makeBlock, rememberDesign, openExport, gotoCard, openProject, setPhotoStyle, refreshAll, saveModePrefs, onCardIndex, renderReview, renderEditMeta, rewriteCurrent: () => startRewrite(),
 });
 
 // ───────────────────────── 시작 ─────────────────────────
