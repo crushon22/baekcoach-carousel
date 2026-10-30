@@ -137,6 +137,8 @@ export async function fillForMake() {
   if (recreating) return false;
   const list = S.photos;
   await addAiPhotos(list, 'photo-list', { total: want - have, auto: true });
+  // 검증에서 빠진 장이 있으면 한 번만 더 채워 본다(실제 키 시험: 2장 중 1장이 다른 제품으로 그려져 4장으로 만들어짐)
+  if (isLiveList(list) && S.phase === 'start' && !S.fillStopped && list.length < want && !recreating) await addAiPhotos(list, 'photo-list', { total: want - list.length, auto: true });
   return isLiveList(list) && S.phase === 'start' && !S.fillStopped;
 }
 
