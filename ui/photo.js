@@ -139,7 +139,13 @@ export async function fillForMake() {
   await addAiPhotos(list, 'photo-list', { total: want - have, auto: true });
   // 검증에서 빠진 장이 있으면 한 번만 더 채워 본다(실제 키 시험: 2장 중 1장이 다른 제품으로 그려져 4장으로 만들어짐)
   if (isLiveList(list) && S.phase === 'start' && !S.fillStopped && list.length < want && !recreating) await addAiPhotos(list, 'photo-list', { total: want - list.length, auto: true });
-  return isLiveList(list) && S.phase === 'start' && !S.fillStopped;
+  if (!isLiveList(list) || S.phase !== 'start' || S.fillStopped) return false;
+  const target = clampCount(S.photoCount);
+  if (list.length < target) {
+    toast(`확인된 사진은 ${list.length}장입니다. 요청한 ${target}장에 부족해 제작을 멈췄어요. 사진을 더 올리거나 장수를 바꾼 뒤 다시 만들어 주세요.`, { kind: 'warn', ms: 10000 });
+    return false;
+  }
+  return true;
 }
 
 // ───────────────────────── 쓸 사진·순서 고르기 ─────────────────────────
@@ -332,7 +338,7 @@ async function addAiPhotos(list, listId, { total: wantTotal = ADD_AI_COUNT, auto
     try { r = await s.done; } catch (e) { if (e?.code !== 'CANCELLED' && !job.stopped) stop = stop || { error: e }; return; } finally { job.runs.delete(s); }
     if (r.fallback || !r.imageId) { stop = stop || { messageKo: r.messageKo }; return; }
     if (r.check && r.check.same === false) { job.rejected++; job.rejectedWhy = r.check.differences?.[0] || r.check.summary || ''; return; }   // 원본과 다른 제품이면 넣지 않는다
-    if (r.check && r.check.comparable === false) job.unverified++;   // 원본과 대조할 게 없어 확인 못 함(연출 차이는 거절 사유가 아니다) — 넣되 알려 준다
+    if (!r.check || r.check.same !== true || r.check.comparable === false || !(r.check.confidence >= 0.8)) { job.unverified++; return; }   // 원본과 대조할 게 없어 확인 못 함(연출 차이는 거절 사유가 아니다) — 자동 사용하지 않는다
     if (!isLiveList(list) || list.length >= MAX_POOL) return;    // 그 사이 새 상품으로 바뀌었거나 꽉 참
     list.push(r.imageId);
     (S.genImages ||= new Set()).add(r.imageId);
@@ -347,7 +353,7 @@ async function addAiPhotos(list, listId, { total: wantTotal = ADD_AI_COUNT, auto
   softRender();
   if (!isLiveList(list)) return; // 새 상품으로 넘어갔으면 옛 결과를 알리지 않는다
   if (list === S.photos) schedulePick();   // 후보가 모였으니 AI 가 쓸 사진·순서를 정한다
-  const rej = (rejected ? ` 원본과 달라 보여서 뺀 사진 ${rejected}장${rejectedWhy ? `(${rejectedWhy})` : ''}.` : '') + (unverified ? ` ${unverified}장은 원본과 대조할 부분이 적어 확인하지 못했어요. 제품이 맞는지 봐 주세요.` : '');
+  const rej = (rejected ? ` 원본과 달라 보여서 뺀 사진 ${rejected}장${rejectedWhy ? `(${rejectedWhy})` : ''}.` : '') + (unverified ? ` ${unverified}장은 같은 제품인지 확인하지 못해 제외했어요.` : '');
   if (stop?.error) showError(stop.error);
   else if (stop) toast(`AI 사진 ${done}장을 추가했어요. ${stop.messageKo || '이미지 생성 한도에 걸렸어요.'}`, { kind: 'warn', ms: 7000 });
   else if (job.stopped) { S.fillStopped = true; toast(done ? `멈췄어요. AI 사진 ${done}장은 추가됐어요.` : '멈췄어요. 추가한 사진은 없어요.'); }
@@ -370,7 +376,7 @@ export async function ensureProductRef(title) {
     let ref = null;
     try {
       const r = await request('ai.productLook', { title: key, brand: S.ident?.brand?.brand || '', photoLook: S.ident?.look || '' }, { timeoutMs: 45000 });
-      if (r?.known && r.look) ref = { look: r.look, mustKeep: r.mustKeep || [], avoid: r.avoid || [], confidence: r.confidence || 0 };
+      if (r?.known && r.grounded === true && r.look) ref = { look: r.look, mustKeep: r.mustKeep || [], avoid: r.avoid || [], confidence: r.confidence || 0 };
     } catch (e) {
       entry.error = e?.code || 'ERROR';   // 한도·연결 오류는 "특정 못 함"과 다르다 — 안내문을 구분한다
       if (['NO_KEY', 'KEY_INVALID', 'BILLING', 'FORBIDDEN'].includes(e?.code)) showError(e);
