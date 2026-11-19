@@ -461,14 +461,15 @@ function infoForm() {
   const price = h('input', { id: 'photo-price', class: 'input', inputmode: 'numeric', placeholder: '예: 59900 (비우면 가격은 링크에서 확인)', 'aria-label': '가격 (선택)' });
   price.value = S.manual.price;
   price.addEventListener('input', () => { S.manual.price = price.value; });
-  const desc = h('textarea', { id: 'photo-desc', class: 'input', rows: 3, placeholder: '상품 설명·특징을 붙여 넣으면 글이 더 정확해져요', 'aria-label': '상품 설명 (선택)' });
+  const desc = h('textarea', { id: 'photo-desc', class: 'input', rows: 3, placeholder: '상품 설명이나 주제·타깃·강조할 점을 적으면 글이 그 흐름대로 써져요', 'aria-label': '설명 또는 기획 메모 (선택)' });
   desc.value = S.manual.desc || '';
   desc.addEventListener('input', () => { S.manual.desc = desc.value; });
   return h('details', { class: 'extra', id: 'photo-info', open: !!S.manual.desc },
-    h('summary', null, '가격·상품 설명'),
+    h('summary', null, '가격·설명'),
     h('div', { class: 'form' },
       h('label', { class: 'label', for: 'photo-price' }, '가격'), price,
-      h('label', { class: 'label', for: 'photo-desc' }, '상품 설명·특징'), desc));
+      h('label', { class: 'label', for: 'photo-desc' }, '설명·기획 메모'), desc,
+      h('p', { class: 'muted small' }, '질병·효능(염증·면역력·노화 방지 등)과 근거 없는 연구·수치는 광고 규칙에 따라 빼고 써요.')));
 }
 
 /** 사진 모드 시작 화면. kids 에 조각을 넣는다. */

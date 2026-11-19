@@ -436,7 +436,7 @@ function renderWebStart(kids) {
       h('label', { class: 'label', for: 'manual-price' }, '가격 (선택)'), price,
       h('p', { class: 'muted small' }, '비우면 "가격은 링크에서 확인"으로 나와요.'),
       h('label', { class: 'label', for: 'manual-desc' }, '상품 설명·특징 (선택)'), desc,
-      h('p', { class: 'muted small' }, '쿠팡 상품 페이지의 설명을 붙여 넣으면 글이 그 내용을 근거로 써요.'))),
+      h('p', { class: 'muted small' }, '쿠팡 상품 설명을 붙여 넣거나 주제·타깃·강조할 점을 적으면 글이 그 내용대로 써요. 질병·효능 표현은 광고 규칙에 따라 빠져요.'))),
   h('div', { class: 'make-wrap' },
     h('button', { type: 'button', class: 'btn btn-primary btn-big btn-block', id: 'btn-make', onclick: () => fn.onMake('manual') }, '만들기'),
     h('p', { class: 'muted small center' }, '카드와 캡션을 한 번에 만들어요.')));
